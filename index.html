@@ -1378,7 +1378,7 @@
           </div>
           <div class="addsheet-cell">
             <div class="lbl">应收（元）</div>
-            <input class="num" id="asReceivable" type="number" inputmode="decimal" value="58.9" oninput="asRecalc()">
+            <input class="num" id="asReceivable" type="number" inputmode="decimal" value="58.9" oninput="asReceivableInput()">
           </div>
           <div class="addsheet-cell" style="cursor:pointer" onclick="openRulerSheet()">
             <div class="lbl">折扣</div>
@@ -1389,7 +1389,7 @@
           </div>
           <div class="addsheet-cell">
             <div class="lbl">实收（元）</div>
-            <input class="num act" id="asActual" type="number" inputmode="decimal" value="58.9" oninput="asRecalc()">
+            <input class="num act" id="asActual" type="number" inputmode="decimal" value="58.9" oninput="asActualInput()" onblur="asActualBlur()">
           </div>
         </div>
         <div class="addsheet-staff" id="asStaffRow" onclick="openStaffSheet()">
@@ -1531,15 +1531,36 @@
       payAmt.style.display = 'none';
     }
   }
+  // 金额键位校验：整数≤6位、小数≤2位、上限999999.99、禁以「.」开头、前导0自动剔除
+  function validKey(s, k) {
+    if (k === '.') {
+      if (s === '') return false;
+      if (s.indexOf('.') >= 0) return false;
+      return true;
+    }
+    if (/^\d$/.test(k)) {
+      if (s === '0') return false;               // 前导0：忽略后续数字
+      var dot = s.indexOf('.');
+      if (dot >= 0) {
+        if (s.slice(dot + 1).length >= 2) return false;  // 小数≤2位
+      } else {
+        if (s.length >= 6) return false;         // 整数≤6位
+      }
+    }
+    var next = s + k;
+    if (!isNaN(parseFloat(next)) && parseFloat(next) > 999999.99) return false;
+    return true;
+  }
   function typeKey(k) {
-    if (s2val.length >= 8) return;
-    if (k === '.' && s2val.indexOf('.') >= 0) return;
+    if (s2val === '0' && /^\d$/.test(k)) { s2val = k; renderS2(); return; }
+    if (!validKey(s2val, k)) return;
     s2val += k;
     renderS2();
   }
   function delKey() { s2val = s2val.slice(0,-1); renderS2(); }
   function goPay() {
-    if (s2val) { s3val = s2val; renderS3(); }
+    if (!s2val || parseFloat(s2val) <= 0) { toast('请先输入金额'); return; }
+    s3val = s2val; renderS3();
     go('s3');
   }
 
@@ -1550,8 +1571,8 @@
     document.getElementById('s3payAmt').textContent = '¥' + s3val;
   }
   function typeKey3(k) {
-    if (s3val.length >= 8) return;
-    if (k === '.' && s3val.indexOf('.') >= 0) return;
+    if (s3val === '0' && /^\d$/.test(k)) { s3val = k; renderS3(); return; }
+    if (!validKey(s3val, k)) return;
     s3val += k;
     renderS3();
   }
@@ -1769,11 +1790,49 @@
     asRecalc();
   }
 
+  // 金额输入过程规范化：上限999999.99、小数≤2位、负数归零
+  function fixAmountOnInput(el) {
+    var v = el.value;
+    if (v === '' || v === '.') return;
+    var n = parseFloat(v);
+    if (isNaN(n)) { el.value = ''; return; }
+    if (n < 0) { el.value = '0'; return; }
+    if (n > 999999.99) { el.value = '999999.99'; return; }
+    var dec = String(v).split('.')[1] || '';
+    if (dec.length > 2) { el.value = n.toFixed(2); }
+  }
+  // 应收输入：规范化后按 应收×折扣 重算实收
+  function asReceivableInput() {
+    fixAmountOnInput(document.getElementById('asReceivable'));
+    asRecalc();
+  }
+  // 实收输入：不改写实收，实时反推折扣（吸附 0.5 档预览）
+  function asActualInput() {
+    fixAmountOnInput(document.getElementById('asActual'));
+    var recv = parseFloat(document.getElementById('asReceivable').value);
+    var actual = parseFloat(document.getElementById('asActual').value);
+    if (isNaN(recv) || recv <= 0 || isNaN(actual) || actual < 0) return;
+    var tick = Math.max(0, Math.min(20, Math.round((actual / recv) * 20)));
+    document.getElementById('asDiscount').textContent = asDiscountLabel(tick);
+  }
+  // 实收失焦：吸附到最近 0.5 折档位并回写实收
+  function asActualBlur() {
+    var recv = parseFloat(document.getElementById('asReceivable').value);
+    var actual = parseFloat(document.getElementById('asActual').value);
+    if (isNaN(recv) || recv <= 0 || isNaN(actual) || actual < 0) { asRecalc(); return; }
+    var tick = Math.max(0, Math.min(20, Math.round((actual / recv) * 20)));
+    asRulerTick = tick;
+    var finalActual = Math.round(recv * (tick / 20) * 100) / 100;
+    document.getElementById('asActual').value = finalActual.toFixed(2);
+    document.getElementById('asDiscount').textContent = asDiscountLabel(tick);
+  }
+
   function asRecalc() {
     var price = parseFloat(asData.price) || 0;
     var qty = parseInt(document.getElementById('asQty').textContent, 10) || 1;
     var recv = parseFloat(document.getElementById('asReceivable').value);
-    if (isNaN(recv)) recv = price * qty;
+    if (isNaN(recv) || recv < 0) recv = price * qty;
+    recv = Math.min(recv, 999999.99);
     var rate = (asRulerTick || 20) / 20;
     var actual = Math.round(recv * rate * 100) / 100;
     document.getElementById('asActual').value = actual.toFixed(2);
@@ -2223,6 +2282,7 @@
   // ===== 确定 =====
   function confirmAddSheet() {
     ensureStaffState();
+    asActualBlur();
     var actual = parseFloat(document.getElementById('asActual').value) || 0;
     var label = asData.name + ' 实收 ¥' + actual.toFixed(2);
     var staffNames = staffRow.staffIds.map(function(sid) {

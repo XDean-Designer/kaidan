@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRD：开单结账（散客开单 · 会员开单 · 快速消费 · 商户端）</title>
+<style>
+  :root {
+    --brand: #F32F41; --brand-soft: #FFF2F2; --brand-border: #FFD5D9;
+    --text: #1a1a1a; --text-sec: #5c5c5c; --text-3: #929292;
+    --border: #e8e8e8; --bg: #fafafa; --card: #fff;
+    --sidebar-w: 248px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; font-family: -apple-system, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    color: var(--text); background: var(--bg); font-size: 14px; line-height: 1.7;
+  }
+  /* ===== 侧边栏 ===== */
+  .sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w);
+    background: #1c1c1e; color: #e8e8e8; overflow-y: auto; padding: 20px 0 40px; z-index: 20;
+  }
+  .sidebar .brand { padding: 0 18px 14px; border-bottom: 1px solid rgba(255,255,255,.08); margin-bottom: 10px; }
+  .sidebar .brand .t { font-size: 15px; font-weight: 700; color: #fff; line-height: 1.4; }
+  .sidebar .brand .s { font-size: 11px; color: #9a9a9a; margin-top: 4px; }
+  .sidebar nav a {
+    display: block; padding: 7px 18px; color: #c8c8c8; text-decoration: none;
+    font-size: 13px; border-left: 3px solid transparent; transition: all .15s;
+  }
+  .sidebar nav a:hover { color: #fff; background: rgba(255,255,255,.05); }
+  .sidebar nav a.on { color: #fff; background: rgba(243,47,65,.18); border-left-color: var(--brand); }
+  .sidebar nav a .no { color: var(--brand); font-weight: 700; margin-right: 6px; }
+  .sidebar nav a.sub { padding-left: 34px; font-size: 12px; color: #9a9a9a; }
+  /* ===== 主内容 ===== */
+  .main { margin-left: var(--sidebar-w); padding: 40px 48px 80px; max-width: 980px; }
+  .main h1 {
+    font-size: 26px; font-weight: 800; color: var(--text); margin: 0 0 6px;
+    border-bottom: 3px solid var(--brand); padding-bottom: 14px;
+  }
+  .main h1 .tag { display:inline-block; background: var(--brand-soft); color: var(--brand); font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 4px; vertical-align: 3px; margin-left: 8px; }
+  .main h2 {
+    font-size: 20px; font-weight: 800; color: var(--text); margin: 40px 0 14px;
+    padding: 10px 14px; background: linear-gradient(90deg, var(--brand-soft), transparent);
+    border-left: 4px solid var(--brand); border-radius: 0 6px 6px 0;
+  }
+  .main h2 .no { color: var(--brand); margin-right: 4px; }
+  .main h3 { font-size: 16px; font-weight: 700; color: var(--text); margin: 26px 0 10px; }
+  .main h4 { font-size: 14px; font-weight: 700; color: var(--text); margin: 18px 0 8px; }
+  .main p { margin: 8px 0; }
+  .main .reader-note { background: #fff; border: 1px solid var(--border); border-left: 4px solid var(--brand); border-radius: 6px; padding: 12px 16px; margin: 12px 0; font-size: 13px; color: var(--text-sec); }
+  .main .kpi { background: var(--brand-soft); border-radius: 8px; padding: 12px 16px; margin: 14px 0; font-size: 13px; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0 16px; background: var(--card); font-size: 13px; }
+  th, td { border: 1px solid var(--border); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: #f5f5f7; font-weight: 700; white-space: nowrap; }
+  tr:nth-child(even) td { background: #fcfcfc; }
+  code { background: #f2f2f4; border-radius: 4px; padding: 1px 5px; font-family: Consolas, Monaco, monospace; font-size: 12px; color: #d6336c; }
+  pre { background: #f6f6f8; border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; overflow-x: auto; font-size: 12.5px; line-height: 1.6; }
+  pre code { background: none; color: inherit; padding: 0; }
+  .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 12px 0; font-size: 12.5px; }
+  .flow .node { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; }
+  .flow .node.b { border-color: var(--brand); color: var(--brand); font-weight: 700; }
+  .flow .node.alt { border-style: dashed; }
+  .flow .arr { color: var(--text-3); font-weight: 700; }
+  .badge-new { display:inline-block; background: var(--brand); color:#fff; font-size: 11px; font-weight:700; padding: 1px 6px; border-radius: 4px; margin-left: 6px; vertical-align: 1px; }
+  .note-inline { color: var(--brand); font-weight: 600; }
+  .foot { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--text-3); font-size: 12px; }
+  .toc-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+  .toc-cards a { display: block; text-decoration: none; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 13px; }
+  .toc-cards a:hover { border-color: var(--brand); }
+  .toc-cards a b { color: var(--brand); }
+  ul, ol { margin: 6px 0 12px; padding-left: 24px; }
+  li { margin: 4px 0; }
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 24px 18px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="brand">
+    <div class="t">PRD：开单结账</div>
+    <div class="s">散客开单 · 会员开单 · 快速消费</div>
+  </div>
+  <nav id="toc"></nav>
+</div>
+
+<div class="main">
+
+<h1>PRD：开单结账 <span class="tag">v1.0</span></h1>
+<p>（散客开单 · 会员开单 · 快速消费 · 商户端）</p>
+
+<table>
+  <tr><th>字段</th><th>内容</th></tr>
+  <tr><td>文档版本</td><td>v1.0</td></tr>
+  <tr><td>日期</td><td>2026-08-20</td></tr>
+  <tr><td>交互原型（唯一可视依据）</td><td>同目录 <code>index.html</code></td></tr>
+  <tr><td>画布</td><td>390 × 844</td></tr>
+  <tr><td>目的</td><td>供前端 / 后端 / 测试及 AI 工具落地「开单结账」；<b>只需本文 + 交互原型</b></td></tr>
+  <tr><td>关联（非必读）</td><td>同目录 <code>card/PRD-项目创建与管理.md</code>（价目表为添加项目/产品的数据源；结算页以线上现有流程为准）</td></tr>
+</table>
+
+<h2 id="howto"><span class="no">—</span>怎么读这份 PRD</h2>
+<p>正文按模块编排。<b>不用通读全文</b>，按角色跳章即可。</p>
+<table>
+  <tr><th>#</th><th>模块</th><th>前端</th><th>后端</th><th>测试</th><th>说明</th></tr>
+  <tr><td>1</td><td>背景 / 目标 / 范围 / 能力映射</td><td>✓</td><td>✓</td><td>✓</td><td>本期变更叙事、防范围蔓延</td></tr>
+  <tr><td>2</td><td>用户场景与成功标准</td><td>✓</td><td>了解</td><td>✓</td><td>测「业务对不对」</td></tr>
+  <tr><td>3</td><td>信息架构与页面清单</td><td>✓</td><td>了解</td><td>✓</td><td>做哪些页、哪些层</td></tr>
+  <tr><td>4</td><td>状态机</td><td>✓</td><td><b>必看</b></td><td><b>必看</b></td><td>顾客身份、性别、会员卡展开、折扣档位、购物车计数</td></tr>
+  <tr><td>5</td><td>交互细则 / 异常流</td><td>✓</td><td>了解</td><td>✓</td><td>输入规则、校验、toast</td></tr>
+  <tr><td>6</td><td>功能规格</td><td>✓</td><td>了解</td><td>✓</td><td>逐屏字段与跳转</td></tr>
+  <tr><td>7</td><td>数据模型与接口约定</td><td>✓</td><td><b>必看</b></td><td>✓</td><td>沿用线上接口；新增字段【待联调确认】</td></tr>
+  <tr><td>8</td><td>业务规则</td><td>✓</td><td><b>必看</b></td><td>✓</td><td>金额口径、折扣吸附、范围边界</td></tr>
+  <tr><td>9</td><td>文案清单与权限</td><td>✓</td><td>部分</td><td>✓</td><td>文案；店员/店长/店主</td></tr>
+  <tr><td>10</td><td>验收 P0 + 造数场景</td><td>了解</td><td>了解</td><td><b>必看</b></td><td>Given→When→Then，含输入边界</td></tr>
+  <tr><td>11</td><td>非功能（极简）</td><td>✓</td><td>✓</td><td>✓</td><td></td></tr>
+  <tr><td>12</td><td>交付物</td><td>✓</td><td>—</td><td>✓</td><td>仅 PRD + 原型</td></tr>
+</table>
+
+<p><b>先读这几条（贯穿全文）</b></p>
+<ol>
+  <li>本期是基于 <b>RTB 线上开单结账</b> 的 <b>优化改版</b>，<b>不改变其他未涉及的功能逻辑</b>。凡本文未单独描述的交互、文案、接口，均沿用线上现有实现。</li>
+  <li>页面顶部顾客卡片变化：男女头像 <b>更换为新素材</b>；点击头像可切换散客性别，头像右侧显示「男散客 / 女散客」；「选择顾客」进入顾客列表，列表新增「男散客 / 女散客」选项，列表内 <b>VIP 标签样式做了微调</b>。</li>
+  <li>从顾客列表选择 <b>会员</b> 后，开单结账页顶部卡片切换为 <b>会员样式</b>。原会员信息卡默认 <b>折叠</b> 会员所持权益，本期改为 <b>保持展开、展示全部持有权益且不可折叠收起</b>；字段显示规则维持现有规则。<b>会员姓名右侧的 VIP 标签只是原型展示用的临时资源</b>，开发时保持该位置现有 VIP 标签逻辑不变。</li>
+  <li>添加项目 / 产品时的 <b>UI UX 是本期最大的修改</b>：参照博卡小店通的 sheet 弹窗样式，按现有逻辑做了适配；设计了 <b>独特的选择员工 UI UX</b>（点击卡片翻转成按钮进行相关选择）；设置折扣采用 <b>拟物标尺组件</b>。购物车添加项后，点击「下一步」进入 <b>原有的开单结账结算页</b>。</li>
+  <li><b>新增「快速消费」功能</b>：无需常规流程的繁琐操作，<b>只需输入金额即可完成开单结算</b>，并 <b>可选填</b> 服务员工信息和备注。为线下调研后决定加入的重要功能。</li>
+  <li>该模块的 <b>其他功能保持现有状态</b>（挂单、结算、支付、会员卡业务等均以线上为准）。</li>
+  <li>输入与联动口径（原型已同步）：金额格式 <b>整数≤6位、小数≤2位、上限 999999.99</b>；「实收」可手动编辑并 <b>反推折扣，吸附到最近 0.5 折档位</b>；快速消费 <b>空金额不可「去收款」</b>。</li>
+</ol>
+<p class="reader-note">交互行为与文案以 <code>index.html</code> 当前表现（含本版同步后的口径）为准。</p>
+
+<!-- ===================== 模块 1 ===================== -->
+<h2 id="m1"><span class="no">1</span>背景 / 目标 / 范围 / 能力映射</h2>
+<h3>1.1 背景</h3>
+<p>RTB 线上开单结账经过一段时间运营，线下调研反馈：</p>
+<ul>
+  <li>常规开单需先选顾客、选项目、配员工、设折扣、填备注，流程较长，存在「只想快速收一笔钱」的场景；</li>
+  <li>顾客卡片与顾客列表在性别表达、头像素材上体验欠佳；</li>
+  <li>会员所持权益信息默认折叠，收银员核对权益时需要额外操作；</li>
+  <li>添加项目/产品时的信息组织与操作路径不符合当前门店操作习惯。</li>
+</ul>
+<p>本期在不改变其他功能逻辑的前提下，对开单结账做定点优化。</p>
+
+<h3>1.2 目标</h3>
+<table>
+  <tr><th>目标</th><th>说明</th></tr>
+  <tr><td>快速消费</td><td>仅输入金额即可开单结算，选填员工与备注</td></tr>
+  <tr><td>顾客卡片优化</td><td>新头像素材；点击头像切换散客性别；卡片同步显示性别文案</td></tr>
+  <tr><td>顾客列表优化</td><td>新增「男散客 / 女散客」散客选项；VIP 标签样式微调</td></tr>
+  <tr><td>会员权益可见</td><td>会员卡保持展开、展示全部权益，不可折叠</td></tr>
+  <tr><td>添加体验升级</td><td>参照博卡小店通 sheet 弹窗样式，四宫格联动 + 拟物折扣标尺 + 翻转选员工</td></tr>
+  <tr><td>回归可控</td><td>其余功能沿用线上，避免范围蔓延</td></tr>
+</table>
+
+<h3>1.3 本期做（In）</h3>
+<ul>
+  <li>顶部顾客卡片：男女头像更换；点击头像切换散客性别（男散客 / 女散客）；卡片展示性别文案</li>
+  <li>顾客列表：新增「男散客」「女散客」选项；会员 VIP 标签样式微调（原型为渐变 ◆VIP）</li>
+  <li>会员卡：从默认折叠改为 <b>保持展开展示全部权益、不可折叠</b>；VIP 标签展示沿用线上逻辑</li>
+  <li>添加项目/产品 sheet 弹窗：标题（项目名+价格）、四宫格（数量 / 应收 / 折扣 / 实收）、服务员工（产品为销售人员）、确定</li>
+  <li>折扣设置：拟物标尺组件（0~10 折，0.5 折一步，免费/5折/原价标签）</li>
+  <li>选择员工：卡片翻转两步选择（点客/散客 → 小工/中工/大工），多选，保留已选</li>
+  <li>快速消费：金额键盘直接开单 + 选填员工/备注 + 去收款</li>
+  <li>下一步：购物车有项 → 进入原有开单结账结算页（原型 toast 提示，结算页以线上为准）</li>
+</ul>
+
+<h3>1.4 本期不做（Out）</h3>
+<ul>
+  <li>结算页 / 支付 / 收银流水（沿用线上，原型不搭建）</li>
+  <li>挂单、会员办卡、储值/计次卡核销（沿用线上，原型 toast 示意）</li>
+  <li>购物车明细 / 移除（沿用线上现有：点击底部 BAR 购物车图标展开 sheet 展示明细）</li>
+  <li>顾客列表搜索 / 新增顾客 / 编辑顾客（沿用线上）</li>
+  <li>价目表管理（见 <code>card/PRD-项目创建与管理.md</code>）</li>
+  <li>多门店、权限体系改造（本期仅列角色，权限沿用线上）</li>
+</ul>
+
+<h3>1.5 旧 → 新能力映射</h3>
+<table>
+  <tr><th>旧体系能力（语义）</th><th>新体系如何表现</th></tr>
+  <tr><td>散客卡仅展示固定头像</td><td>双头像可点击切换性别，卡片文案跟随「男散客/女散客」</td></tr>
+  <tr><td>选择顾客仅会员列表</td><td>列表顶部新增「男散客」「女散客」散客选项</td></tr>
+  <tr><td>会员卡默认折叠权益</td><td>保持展开、全部权益可见、不可折叠</td></tr>
+  <tr><td>添加项目/产品信息组织分散</td><td>sheet 弹窗：标题 + 四宫格联动 + 员工/备注 + 确定</td></tr>
+  <tr><td>折扣数字选择</td><td>拟物标尺（0~10 折，0.5 折步进）</td></tr>
+  <tr><td>选择员工平铺点选</td><td>卡片翻转两步选择（点客/散客 → 工位），多选保留</td></tr>
+  <tr><td>无快速路径</td><td>快速消费：输入金额即可开单，选填员工/备注</td></tr>
+  <tr><td>常规开单</td><td>项目/产品加购 → 下一步 → 原有结算页（沿用线上）</td></tr>
+</table>
+<p class="reader-note">映射不足时以原型字段与行为为准。</p>
+
+<!-- ===================== 模块 2 ===================== -->
+<h2 id="m2"><span class="no">2</span>用户场景与成功标准</h2>
+<h3>2.1 角色</h3>
+<table>
+  <tr><th>角色</th><th>说明</th></tr>
+  <tr><td>店员</td><td>日常收银开单</td></tr>
+  <tr><td>店长</td><td>日常收银开单、门店管理</td></tr>
+  <tr><td>店主</td><td>门店最高权限</td></tr>
+</table>
+<p>本期 <b>仅列角色</b>，<b>不定义角色间权限差异</b>；操作权限沿用线上现有规则。</p>
+
+<h3>2.2 核心场景</h3>
+<table>
+  <tr><th>场景</th><th>用户期望</th><th>成功标准</th></tr>
+  <tr><td>散客开单</td><td>新客不建档案直接开单</td><td>顶部显示散客卡；可切换性别；加购项目/产品后下一步进入结算</td></tr>
+  <tr><td>会员开单</td><td>老客识别身份、查看权益</td><td>选择会员后卡片切换为会员样式；权益全部展开可见</td></tr>
+  <tr><td>快速消费</td><td>只需输入金额即可收银</td><td>输入金额 + 选填员工/备注 → 去收款</td></tr>
+  <tr><td>更换顾客</td><td>开单中换人</td><td>顶部卡片、身份状态同步切换</td></tr>
+  <tr><td>添加项目</td><td>加购服务并指定员工、折扣</td><td>sheet 弹窗四宫格联动正确；折扣标尺可设；员工可多选</td></tr>
+  <tr><td>下一步结算</td><td>进入既有结算流程</td><td>购物车有项进入结算页（原型 toast 提示）</td></tr>
+</table>
+
+<!-- ===================== 模块 3 ===================== -->
+<h2 id="m3"><span class="no">3</span>信息架构与页面清单</h2>
+<pre>
+开单结账
+ ├─ s1 散客开单
+ │    ├─ 顶部散客卡（双头像·性别文案·选择顾客）
+ │    ├─ 项目/产品 Tab + 搜索 + 快速消费行
+ │    ├─ 左侧分类（选中白底）+ 项目/产品卡片（圆形加号）
+ │    └─ 底部 hint-bar + bottom-bar（购物车/应付/挂单/下一步）
+ ├─ s2 快速消费
+ │    ├─ 顶部身份卡（散客/会员 按身份切换）
+ │    ├─ 收款金额 / 员工 / 备注
+ │    └─ 数字键盘 + 去收款
+ ├─ s3 快速消费去收款
+ │    ├─ 顶部身份卡（同上）
+ │    ├─ 收款金额（只读显示，键盘可改）/ 员工 / 备注
+ │    └─ 数字键盘 + 去收款
+ ├─ s4 选择顾客
+ │    ├─ 搜索栏 + 取消
+ │    ├─ 散客（男散客 / 女散客）
+ │    ├─ 会员列表（姓名 / VIP 标签 / 编号 / 最近消费）
+ │    └─ 字母索引 A-Z#
+ ├─ s5 会员开单
+ │    ├─ 顶部会员卡（权益全部展开）
+ │    ├─ 项目/产品 Tab + 搜索 + 快速消费行
+ │    ├─ 左侧分类 + 项目/产品卡片（圆形加号）
+ │    └─ 底部 bottom-bar（购物车/应付/挂单/下一步）
+ └─ 弹层
+      ├─ addsheet 添加项目/产品（四宫格 + 员工 + 确定）
+      ├─ ruler-sheet 设置折扣（拟物标尺 + 确定）
+      ├─ staff-sheet 选择员工（网格 + 两步翻转 + 完成）
+      └─ remark-sheet 备注（textarea 200 字 + 完成）
+</pre>
+
+<h3>3.0 页面流（示意）</h3>
+<div class="flow">
+  <span class="node b">散客开单 s1</span><span class="arr">→ 快速消费</span><span class="node">快速消费 s2</span>
+  <span class="arr">→ 去收款</span><span class="node">去收款 s3</span>
+</div>
+<div class="flow">
+  <span class="node b">散客开单 s1</span><span class="arr">→ 选择顾客</span><span class="node">选择顾客 s4</span>
+  <span class="arr">→ 选会员</span><span class="node b">会员开单 s5</span>
+</div>
+<div class="flow">
+  <span class="node">s4</span><span class="arr">→ 选男/女散客</span><span class="node">回来源页（s5 进入则回 s1）</span>
+  <span class="arr">；选会员</span><span class="node">回来源页（s1 进入则跳 s5）</span>
+</div>
+<div class="flow">
+  <span class="node">加购</span><span class="arr">→</span><span class="node alt">添加项目/产品 sheet</span>
+  <span class="arr">→ 设折扣</span><span class="node alt">设置折扣</span>
+  <span class="arr">→ 选员工</span><span class="node alt">选择员工</span>
+</div>
+<div class="flow">
+  <span class="node">快速消费</span><span class="arr">→ 备注</span><span class="node alt">备注 sheet</span>
+</div>
+<div class="flow">
+  <span class="node b">下一步（购物车有项）</span><span class="arr">→</span><span class="node b">原有结算页（线上）</span>
+</div>
+
+<table>
+  <tr><th>页面/层</th><th>导航标题（原型）</th><th>说明</th></tr>
+  <tr><td>散客开单 s1</td><td>开单结账</td><td>散客卡 + 项目/产品选品 + 底部工具栏</td></tr>
+  <tr><td>快速消费 s2</td><td>开单结账</td><td>金额键盘 + 选填员工/备注 + 去收款</td></tr>
+  <tr><td>快速消费去收款 s3</td><td>开单结账</td><td>金额显示（键盘可改）+ 员工/备注 + 去收款</td></tr>
+  <tr><td>选择顾客 s4</td><td>—</td><td>搜索栏 + 散客/会员列表 + 字母索引</td></tr>
+  <tr><td>会员开单 s5</td><td>开单结账</td><td>会员卡（权益展开）+ 项目/产品选品 + 底部工具栏</td></tr>
+  <tr><td>添加项目/产品</td><td>—</td><td>sheet 弹窗（标题/四宫格/员工/确定）</td></tr>
+  <tr><td>设置折扣</td><td>设置折扣</td><td>拟物标尺 + 当前值 + 确定</td></tr>
+  <tr><td>选择员工</td><td>选择员工</td><td>员工网格 + 两步翻转选择 + 完成</td></tr>
+  <tr><td>备注</td><td>备注</td><td>文本框（200 字）+ 完成</td></tr>
+</table>
+
+<!-- ===================== 模块 4 ===================== -->
+<h2 id="m4"><span class="no">4</span>状态机</h2>
+<h3>4.1 顾客身份 <code>currentCust</code></h3>
+<table>
+  <tr><th>状态</th><th>含义</th><th>顶部卡片</th></tr>
+  <tr><td><code>guest</code></td><td>散客</td><td>深色散客卡（双头像 · 性别文案 · 选择顾客）</td></tr>
+  <tr><td><code>member</code></td><td>会员</td><td>会员卡（头像/姓名/VIP/上次到店/办卡/更换顾客 + 权益展开）</td></tr>
+</table>
+<div class="flow"><span class="node">guest</span><span class="arr">→ 选会员 →</span><span class="node">member</span><span class="arr">→ 选男/女散客 →</span><span class="node">guest</span></div>
+<ul>
+  <li>默认 <code>guest</code>。</li>
+  <li>s2 / s3 顶部卡片按该状态切换；后续元素（收款金额/员工/备注）随卡片高度下移。</li>
+  <li>从 s4 选会员：回到来源页（s2/s3 返回原页；从 s1 进入则跳 s5）。</li>
+  <li>从 s4 选男/女散客：回到来源页（从 s5 进入则回 s1）。</li>
+</ul>
+
+<h3>4.2 散客性别 <code>data-g</code></h3>
+<table>
+  <tr><th>状态</th><th>卡片文案</th><th>头像表现</th></tr>
+  <tr><td><code>male</code>（默认）</td><td>男散客</td><td>男头像彩色，女头像灰阶</td></tr>
+  <tr><td><code>female</code></td><td>女散客</td><td>女头像彩色，男头像灰阶</td></tr>
+</table>
+<ul>
+  <li>点击顶部卡片头像可切换性别；切换仅影响展示，不改变身份（仍为散客）。</li>
+  <li>s4 散客列表选择「男散客 / 女散客」同样更新。</li>
+</ul>
+
+<h3>4.3 会员卡权益展开</h3>
+<ul>
+  <li><b>保持展开、展示全部持有权益，不可折叠收起</b>（区别于线上默认折叠）。</li>
+  <li>字段显示规则维持现有规则不变（如：计次卡「余N次」、储值卡「余额xx元」、折扣卡「x.x折」）。</li>
+</ul>
+
+<h3>4.4 折扣档位 <code>asRulerTick</code></h3>
+<ul>
+  <li>0 ~ 20 档（tick），每档 = 0.5 折；<code>折扣率 = tick / 20</code>。</li>
+  <li>标签：tick=0「免费」；tick=10「5折」；tick=20「原价」；其余「N 折 / N.5 折」。</li>
+  <li>实收手动编辑后反推 tick 并 <b>吸附到最近档位</b>（见模块 8）。</li>
+</ul>
+
+<h3>4.5 购物车分类计数</h3>
+<ul>
+  <li>按「页面 + 左侧分类组」计数红点；加购成功后 <code>+1</code>；初始为 0 且隐藏。</li>
+  <li>购物车明细 / 移除沿用线上（bottom-bar 购物车图标展开 sheet）。</li>
+</ul>
+
+<h3>4.6 添加弹窗四宫格联动</h3>
+<table>
+  <tr><th>字段</th><th>输入</th><th>联动</th></tr>
+  <tr><td>数量</td><td>步进 1~999</td><td>应收 = 单价 × 数量</td></tr>
+  <tr><td>应收（元）</td><td>手动可改</td><td>实收 = 应收 × 折扣</td></tr>
+  <tr><td>折扣</td><td>标尺（0~10 折）</td><td>实收 = 应收 × 折扣</td></tr>
+  <tr><td>实收（元）</td><td>手动可改</td><td>反推折扣 → 吸附 0.5 档 → 回写实收</td></tr>
+</table>
+
+<!-- ===================== 模块 5 ===================== -->
+<h2 id="m5"><span class="no">5</span>交互细则 / 异常流</h2>
+<h3>5.1 金额输入规则（快速消费金额 + 应收/实收统一）</h3>
+<table>
+  <tr><th>规则</th><th>说明</th></tr>
+  <tr><td>整数位</td><td>≤ 6 位</td></tr>
+  <tr><td>小数位</td><td>≤ 2 位</td></tr>
+  <tr><td>上限</td><td>999999.99</td></tr>
+  <tr><td>下限</td><td>0（不可为负）</td></tr>
+  <tr><td>小数点</td><td>最多 1 个；<b>禁止以「.」开头</b></td></tr>
+  <tr><td>前导 0</td><td>自动剔除（输入 <code>0</code> 后再输数字视为替换，如 <code>05</code> → <code>5</code>）</td></tr>
+  <tr><td>空值</td><td>不可提交；快速消费空金额点「去收款」toast「请先输入金额」</td></tr>
+</table>
+
+<h3>5.2 实收反推折扣</h3>
+<ul>
+  <li>实收输入时：实时按 <code>实收 ÷ 应收</code> 反推折扣并预览（吸附到最近 0.5 折档位文案）。</li>
+  <li>实收失焦 / 点确定：吸附到最近 0.5 折档位，<b>实收同步改写为该档位对应值</b>，标尺与折扣文案一致。</li>
+  <li>应收无效（为空/≤0）时回退：实收 = 应收默认值 × 折扣。</li>
+</ul>
+
+<h3>5.3 员工 / 备注（选填）</h3>
+<ul>
+  <li>员工：非必填；快速消费与添加弹窗各自维护选择状态，互不影响。</li>
+  <li>备注：非必填；≤ 200 字，实时计数 <code>n/200</code>；空 / 全空格视为未填。</li>
+</ul>
+
+<h3>5.4 校验失败（toast）</h3>
+<table>
+  <tr><th>条件</th><th>提示</th></tr>
+  <tr><td>快速消费空金额点「去收款」</td><td>请先输入金额</td></tr>
+  <tr><td>下一步（购物车为空）</td><td>请先选择项目</td></tr>
+  <tr><td>下一步（购物车有项）</td><td>已进入开单结账，请按现有流程完成结算</td></tr>
+  <tr><td>挂单</td><td>已挂单</td></tr>
+  <tr><td>底部「+」按钮</td><td>请选择项目</td></tr>
+  <tr><td>底部「+」按钮（s5 触发）</td><td>选择项目或快速消费</td></tr>
+  <tr><td>办卡</td><td>办理会员卡</td></tr>
+  <tr><td>s3 去收款</td><td>进入收款结算</td></tr>
+</table>
+
+<h3>5.5 弹层交互</h3>
+<ul>
+  <li>遮罩点击关闭；员工 sheet 关闭（点遮罩/完成）<b>保留已选状态</b>，重进不重置。</li>
+  <li>添加弹窗遮罩关闭不写入购物车；「确定」后写入并 toast「已加入 · 应付 ¥x.xx」。</li>
+</ul>
+
+<!-- ===================== 模块 6 ===================== -->
+<h2 id="m6"><span class="no">6</span>功能规格</h2>
+<p>下列字段、按钮、跳转均须与原型一致；视觉以原型为准（品牌色 <code>#F32F41</code> 等）。</p>
+
+<h3>6.1 顶部顾客卡片 <span class="badge-new">本期变更</span></h3>
+<p><b>散客卡（深色卡）</b></p>
+<ul>
+  <li>双头像（男 / 女）并排；<b>头像素材更换为新素材</b>；点击头像切换性别。</li>
+  <li>选中的性别头像彩色，未选中的灰阶。</li>
+  <li>头像右侧显示「男散客 / 女散客」。</li>
+  <li>右侧「选择顾客」按钮 → s4。</li>
+  <li>s1 / s2 / s3 共用同一散客卡（默认男散客）。</li>
+</ul>
+<p><b>会员卡（会员身份）</b></p>
+<ul>
+  <li>头像 / 姓名 / VIP 标签 / 上次到店 / 「办卡」「更换顾客」。</li>
+  <li><b>权益区保持展开、展示全部持有权益、不可折叠</b>。</li>
+  <li>权益行：标签（计次卡/储值卡/折扣卡）+ 名称 + 值（余N次 / 余额xx元 / x.x折）。</li>
+  <li><b>VIP 标签为原型临时展示资源，开发保持现有 VIP 标签逻辑不变</b>。</li>
+</ul>
+
+<h3>6.2 项目 / 产品 Tab 与左侧分类</h3>
+<ul>
+  <li>项目 Tab 分类：洗吹 / 洗剪吹 / 剪发 / 造型 / 干洗 / 接发 / 烫染发 / 护理 / 其他。</li>
+  <li>产品 Tab 分类：洗护 / 染烫 / 其他。</li>
+  <li>分类选中态：<b>选中白底，未选灰底</b>；点击后右侧内容平滑滚动到对应分类标题；默认选中首个分类。</li>
+  <li>分类右侧红色数字角标：显示该分类已加购数量（初始隐藏，加购后累加）。</li>
+</ul>
+
+<h3>6.3 项目 / 产品卡片</h3>
+<ul>
+  <li>卡片：缩略图 + 名称 + 价格（¥ 前置）+ 圆形加号。</li>
+  <li>点加号 → 打开添加 sheet（<code>addCart</code> / <code>addCartM</code>）。</li>
+  <li>数据为演示数据；开发接入价目表实时数据（沿用 <code>card/PRD-项目创建与管理.md</code>）。</li>
+</ul>
+
+<h3>6.4 搜索栏</h3>
+<p>placeholder「搜索项目名称或价格」；右侧「搜索」按钮。行为沿用线上。</p>
+
+<h3>6.5 快速消费行</h3>
+<p>s1 / s5 中「⚡ 快速消费」行；点击 → 设置身份为散客并进入 s2。</p>
+
+<h3>6.6 快速消费 s2（新功能）<span class="badge-new">本期变更</span></h3>
+<ul>
+  <li>顶部身份卡：散客（默认）或会员（从 s4 选会员进入时）。</li>
+  <li><b>收款金额</b>：数字键盘输入；placeholder「请输入金额」；格式见 5.1；空金额「去收款」拦截。</li>
+  <li><b>员工</b>：选填；点击 → 选择员工 sheet；回填格式「姓名·点客·大工」（多人顿号连接）。</li>
+  <li><b>备注</b>：选填；点击 → 备注 sheet；≤200 字。</li>
+  <li>数字键盘：1-9 / 0 / . / ⌫；「去收款」→ s3。</li>
+</ul>
+
+<h3>6.7 快速消费去收款 s3 <span class="badge-new">本期变更</span></h3>
+<ul>
+  <li>结构同 s2；金额初始取 s2 输入值，键盘可改；员工/备注与 s2 共享同一状态。</li>
+  <li>「去收款」→ 进入收款结算（原型 toast 提示）。</li>
+</ul>
+
+<h3>6.8 选择顾客 s4 <span class="badge-new">本期变更</span></h3>
+<ul>
+  <li>搜索栏：placeholder「输入顾客姓名/手机号/编号/备注」+「取消」。</li>
+  <li><b>散客组</b>：新增「男散客」「女散客」两个选项；选择后返回来源页（从 s5 进入则回 s1），并更新散客卡性别与身份。</li>
+  <li><b>会员组</b>：按姓氏分组（A-Z# 索引）；行含姓名 / <b>VIP 标签（微调为渐变 ◆VIP）</b> / 手机号 / 最近消费；点选会员 → 会员身份 + 返回来源页（s2/s3 返回原页，s1 进入则跳 s5）。</li>
+</ul>
+
+<h3>6.9 添加项目 / 产品 sheet <span class="badge-new">本期变更</span></h3>
+<ul>
+  <li><b>标题区</b>：项目名 + 价格（红色，两行左对齐）。</li>
+  <li><b>四宫格</b>：
+    <ul>
+      <li>数量：步进器（默认 1，1~999）</li>
+      <li>应收（元）：数字输入（默认=单价×数量）</li>
+      <li>折扣：展示当前折扣文案，点击 → 设置折扣 sheet</li>
+      <li>实收（元）：数字输入（默认=应收×折扣；可手动改，反推折扣）</li>
+    </ul>
+  </li>
+  <li><b>员工行</b>：标签为「服务员工」（项目）/「销售人员」（产品）；点击 → 选择员工 sheet；未选显示「请选择」。</li>
+  <li><b>确定</b>：写入购物车（应付总额累加、分类角标 +1），toast「已加入 · 应付 ¥x.xx」；关闭弹层。</li>
+</ul>
+
+<h3>6.10 设置折扣 sheet <span class="badge-new">本期变更</span></h3>
+<ul>
+  <li>标题「设置折扣」+ 右侧当前值（如「原价」「5 折」）。</li>
+  <li>拟物标尺：0~10 折，0.5 折步进；锚点标签「免费 / 5折 / 原价」。</li>
+  <li>确定：写入折扣并联动实收；关闭弹层。</li>
+</ul>
+
+<h3>6.11 选择员工 sheet <span class="badge-new">本期变更</span></h3>
+<ul>
+  <li>员工网格（演示 14 人，含头像/姓名/职位）。</li>
+  <li><b>两步翻转选择</b>：点卡片 → 卡片翻转显示「点客 / 散客」按钮 → 选择后翻转显示「小工 / 中工 / 大工」按钮 → 完成该员工选择。</li>
+  <li><b>多选</b>；已选员工卡片带勾选角标；<b>保留已选状态</b>（重进不重置）。</li>
+  <li>已选员工在添加 sheet / 快速消费页回填。</li>
+  <li>底部「完成」确认。</li>
+</ul>
+
+<h3>6.12 底部工具栏</h3>
+<ul>
+  <li>hint-bar：「具体金额以结算为准」（s1）。</li>
+  <li>bottom-bar：购物车图标 / 「应付 ¥0.00」/ 挂单 / 下一步（s1、s5）。</li>
+  <li><b>购物车图标</b>：展开购物车明细 sheet（<b>沿用线上现有实现</b>，本期不重做）。</li>
+  <li>下一步：有项 → 原有结算页（原型 toast）；无项 → toast「请先选择项目」。</li>
+</ul>
+
+<!-- ===================== 模块 7 ===================== -->
+<h2 id="m7"><span class="no">7</span>数据模型与接口约定</h2>
+<p><b>原则：凡本文未列出的接口、字段均沿用线上现有开单结账实现。</b></p>
+
+<h3>7.1 沿用线上（不新增）</h3>
+<table>
+  <tr><th>数据</th><th>来源</th></tr>
+  <tr><td>顾客列表（会员 + 手机号 + 最近消费）</td><td>线上现有顾客接口</td></tr>
+  <tr><td>会员权益（计次/储值/折扣卡）</td><td>线上现有会员卡接口</td></tr>
+  <tr><td>价目（项目/产品/分类/价格）</td><td>价目表接口（见 <code>card/PRD-项目创建与管理.md</code>）</td></tr>
+  <tr><td>员工 / 工位 / 点客·散客</td><td>线上现有员工接口</td></tr>
+  <tr><td>购物车 / 结算 / 支付</td><td>线上现有开单结算流程</td></tr>
+</table>
+
+<h3>7.2 新增 / 调整（【待联调确认】）</h3>
+<table>
+  <tr><th>字段</th><th>说明</th></tr>
+  <tr><td>散客性别 <code>gender</code></td><td>顶部卡片 / 快速消费提交时随单记录</td></tr>
+  <tr><td>快速消费金额</td><td>直接作为账单金额提交，无需关联项目</td></tr>
+  <tr><td>快速消费员工</td><td>选填，可多选，含点客/散客/工位语义</td></tr>
+  <tr><td>快速消费备注</td><td>选填，≤200 字</td></tr>
+</table>
+
+<h3>7.3 能力清单（路径【待联调确认】）</h3>
+<table>
+  <tr><th>能力</th><th>说明</th></tr>
+  <tr><td>快速消费开单</td><td>金额 + 选填员工/备注 + 散客性别 → 生成账单进入结算</td></tr>
+  <tr><td>散客性别选择</td><td>列表选择 / 卡片头像点击均写入</td></tr>
+  <tr><td>会员卡权益展开</td><td>返回全部权益（不再折叠）</td></tr>
+  <tr><td>折扣档位</td><td>0~10 折，0.5 步进，实收反推吸附</td></tr>
+  <tr><td>员工多选回填</td><td>「姓名·点客·大工」格式</td></tr>
+</table>
+
+<h3>7.4 时序（示意）</h3>
+<pre>
+收银员选择散客性别/会员
+  → 顶部卡片刷新（身份 + 权益）
+收银员输入快速消费金额（选填员工/备注）
+  → 点「去收款」
+  → 校验金额非空（否则 toast「请先输入金额」）
+  → 进入快速消费去收款
+  → 收款结算（沿用线上）
+收银员添加项目/产品
+  → sheet 四宫格联动（数量/应收/折扣/实收）
+  → 选择员工（可多选）
+  → 确定 → 应付累加 + 分类角标 +1
+  → 下一步 → 原有结算页
+</pre>
+
+<!-- ===================== 模块 8 ===================== -->
+<h2 id="m8"><span class="no">8</span>业务规则</h2>
+<ol>
+  <li><b>身份切换</b>：默认散客；选会员 → 会员；选男/女散客 → 散客。s2/s3 顶部卡片随身份切换，后续元素随卡片高度下移。</li>
+  <li><b>散客性别</b>：默认男散客；卡片头像点击 / 列表选择均可切换；仅影响展示与随单记录。</li>
+  <li><b>会员卡权益</b>：保持展开、全部可见、不可折叠；字段显示规则维持现有。</li>
+  <li><b>VIP 标签</b>：原型为临时展示资源；开发保持该位置现有 VIP 标签逻辑不变。</li>
+  <li><b>金额格式</b>：整数≤6 位、小数≤2 位、上限 999999.99、禁「.」开头、前导 0 剔除、不可为负。</li>
+  <li><b>快速消费</b>：空金额不可「去收款」（toast「请先输入金额」）；员工/备注选填。</li>
+  <li><b>实收反推</b>：实收可手动编辑；反推折扣并吸附最近 0.5 折档位；实收改写为该档位对应值；应收无效时回退。</li>
+  <li><b>折扣档位</b>：tick 0~20（0.5 折/档）；标签 免费 / 5折 / 原价。</li>
+  <li><b>数量</b>：步进 1~999。</li>
+  <li><b>员工选择</b>：两步翻转（点客/散客 → 小工/中工/大工）；多选；重进保留已选；回填「姓名·点客·大工」。</li>
+  <li><b>备注</b>：≤200 字；空/全空格视为未填。</li>
+  <li><b>购物车</b>：加购后应付累加、分类角标 +1；购物车明细/移除沿用线上（bottom-bar 图标展开 sheet）。</li>
+  <li><b>下一步</b>：购物车有项 → 进入原有结算页；无项 → toast「请先选择项目」。</li>
+  <li><b>范围边界</b>：其余功能（挂单、结算、支付、办卡等）均沿用线上现有逻辑。</li>
+  <li><b>角色权限</b>：店员 / 店长 / 店主，仅列角色，权限沿用线上。</li>
+</ol>
+
+<!-- ===================== 模块 9 ===================== -->
+<h2 id="m9"><span class="no">9</span>文案清单与权限</h2>
+<h3>9.1 文案清单（须与原型一致）</h3>
+<p><b>导航/按钮</b>：开单结账、项目、产品、搜索、快速消费、选择顾客、更换顾客、办卡、挂单、下一步、去收款、完成、确定、取消、男散客、女散客、散客、设置折扣、选择员工、备注、服务员工、销售人员、请选择、数量、应收（元）、折扣、实收（元）、原价、5折、免费。</p>
+<p><b>占位符</b>：请输入金额、搜索项目名称或价格、添加备注（200字以内）、请输入备注（200字以内）、输入顾客姓名/手机号/编号/备注。</p>
+<p><b>Toast</b>：请先输入金额、请先选择项目、已进入开单结账，请按现有流程完成结算、已挂单、请选择项目、选择项目或快速消费、办理会员卡、进入收款结算、已加入 · 应付 ¥{金额}。</p>
+<p><b>权益行</b>：计次卡 / 储值卡 / 折扣卡 + 名称 + 值（余N次 / 余额xx.xx元 / x.x折）。</p>
+<p><b>提示条</b>：具体金额以结算为准。</p>
+<p><b>分类</b>：项目=洗吹/洗剪吹/剪发/造型/干洗/接发/烫染发/护理/其他；产品=洗护/染烫/其他。</p>
+<p><b>演示数据</b>（开发接入真实数据）：项目=高级设计师洗吹+造型 ¥58.9、资深设计师|精剪+洗吹造型(不满意免单）¥98、首席设计师洗剪吹一口价 ¥138、资深设计师|人气洗剪造型 ¥216.09；产品=卡诗黑钻钥源洗发水 ¥268、欧莱雅臻萃染发膏 ¥198、资生堂fino发膜 ¥158、施华蔻羊绒脂护发素 ¥88。</p>
+<p><b>员工演示数据（14 人）</b>：顾清扬(店主)、林屿森(美容师)、何苏叶(店长)、阿Ken(美容师)、Lisa(美甲师)、张明(美发师)、李华(美发师)、王芳(美甲师)、陈强(美发师)、赵敏(前台)、周杰(美发师)、吴婷(美睫师)、小陈(学徒)、阿宁(学徒)。</p>
+
+<h3>9.2 权限</h3>
+<table>
+  <tr><th>角色</th><th>开单结账</th></tr>
+  <tr><td>店员</td><td>按线上现有权限</td></tr>
+  <tr><td>店长</td><td>按线上现有权限</td></tr>
+  <tr><td>店主</td><td>按线上现有权限</td></tr>
+</table>
+<p>本期不新增权限差异；原型按默认角色路径演示。</p>
+
+<!-- ===================== 模块 10 ===================== -->
+<h2 id="m10"><span class="no">10</span>验收 P0 + 造数场景</h2>
+<h3>10.1 造数</h3>
+<table>
+  <tr><th>场景</th><th>说明</th></tr>
+  <tr><td>散客</td><td>男散客 / 女散客 两条散客身份</td></tr>
+  <tr><td>会员</td><td>至少 1 名持多张卡的会员（计次+储值+折扣）</td></tr>
+  <tr><td>员工</td><td>覆盖点客/散客与三种工位的员工</td></tr>
+  <tr><td>项目/产品</td><td>至少覆盖 2 个分类</td></tr>
+  <tr><td>快速消费</td><td>空金额 / 正常金额 两条路径</td></tr>
+</table>
+<p>正式环境自备等价数据；演示数据不进产品。</p>
+
+<h3>10.2 Given → When → Then（P0）</h3>
+<p><b>顾客卡片 / 顾客列表</b></p>
+<ol>
+  <li><b>Given</b> 散客开单页，<b>When</b> 点击女头像，<b>Then</b> 女头像彩色、男头像灰阶、文案变「女散客」；再点男头像恢复「男散客」。</li>
+  <li><b>Given</b> 散客卡默认态，<b>When</b> 首次进入，<b>Then</b> 男散客选中（男彩女灰），文案「男散客」。</li>
+  <li><b>Given</b> 散客开单页，<b>When</b> 点击「选择顾客」，<b>Then</b> 进入顾客列表，顶部有「男散客」「女散客」选项。</li>
+  <li><b>Given</b> 顾客列表，<b>When</b> 选「女散客」，<b>Then</b> 返回来源页，散客卡更新为女散客。</li>
+  <li><b>Given</b> 顾客列表，<b>When</b> 选会员（如陈女士），<b>Then</b> 顶部切换为会员卡；从 s1 进入时跳 s5。</li>
+  <li><b>Given</b> 会员身份，<b>When</b> 点「更换顾客」选男散客，<b>Then</b> 切回散客卡（从 s5 进入则回 s1）。</li>
+  <li><b>Given</b> 会员列表，<b>When</b> 查看 VIP 标签，<b>Then</b> 微调后的渐变 ◆VIP 样式正确；文案/逻辑以线上现有 VIP 标签为准。</li>
+</ol>
+<p><b>会员卡权益展开</b></p>
+<ol start="8">
+  <li><b>Given</b> 会员卡，<b>When</b> 查看权益区，<b>Then</b> 全部权益展开显示（计次/储值/折扣），无折叠入口。</li>
+  <li><b>Given</b> 会员卡，<b>When</b> 重复进入，<b>Then</b> 权益始终展开、不可折叠收起。</li>
+  <li><b>Given</b> 会员卡，<b>When</b> 查看字段，<b>Then</b> 显示规则维持现有（余N次 / 余额xx元 / x.x折）。</li>
+</ol>
+<p><b>添加项目/产品 sheet</b></p>
+<ol start="11">
+  <li><b>Given</b> 项目卡片，<b>When</b> 点圆形加号，<b>Then</b> 打开添加 sheet，标题为项目名 + 红色价格。</li>
+  <li><b>Given</b> 添加 sheet，<b>When</b> 步进数量，<b>Then</b> 应收 = 单价 × 数量；实收 = 应收 × 当前折扣。</li>
+  <li><b>Given</b> 添加 sheet，<b>When</b> 手动改应收，<b>Then</b> 实收按新应收 × 折扣联动更新。</li>
+  <li><b>Given</b> 添加 sheet，<b>When</b> 设折扣（如 5 折），<b>Then</b> 实收 = 应收 × 0.5，折扣文案「5 折」。</li>
+  <li><b>Given</b> 添加 sheet，<b>When</b> 手动改实收为任意值后失焦/确定，<b>Then</b> 吸附最近 0.5 折档位，实收改写为该档对应值，折扣文案同步。</li>
+  <li><b>Given</b> 添加 sheet（项目），<b>When</b> 查看员工行，<b>Then</b> 标签「服务员工」，未选显示「请选择」。</li>
+  <li><b>Given</b> 添加 sheet（产品），<b>When</b> 查看员工行，<b>Then</b> 标签「销售人员」。</li>
+  <li><b>Given</b> 添加 sheet，<b>When</b> 点确定，<b>Then</b> 应付总额累加实收金额、分类角标 +1、toast「已加入 · 应付 ¥x.xx」、弹层关闭。</li>
+  <li><b>Given</b> 添加 sheet，<b>When</b> 点遮罩关闭，<b>Then</b> 不写入购物车。</li>
+</ol>
+<p><b>折扣标尺</b></p>
+<ol start="20">
+  <li><b>Given</b> 设置折扣 sheet，<b>When</b> 拖动标尺，<b>Then</b> 档位 0.5 折步进，端点标签「免费」「原价」、中点「5折」。</li>
+  <li><b>Given</b> 设置折扣 sheet，<b>When</b> 设到 0 档，<b>Then</b> 折扣文案「免费」，实收 = 0。</li>
+  <li><b>Given</b> 设置折扣 sheet，<b>When</b> 点确定，<b>Then</b> 返回添加 sheet 并联动实收。</li>
+</ol>
+<p><b>选择员工</b></p>
+<ol start="23">
+  <li><b>Given</b> 选择员工 sheet，<b>When</b> 点员工卡片，<b>Then</b> 卡片翻转显示「点客 / 散客」。</li>
+  <li><b>Given</b> 已选「点客」，<b>When</b> 进入下一步，<b>Then</b> 翻转显示「小工 / 中工 / 大工」。</li>
+  <li><b>Given</b> 员工完成选择，<b>When</b> 查看，<b>Then</b> 卡片带勾选角标；添加 sheet / 快速消费回填「姓名·点客·大工」。</li>
+  <li><b>Given</b> 员工 sheet，<b>When</b> 多选多位员工后完成，<b>Then</b> 全部回填，顿号连接。</li>
+  <li><b>Given</b> 员工 sheet 关闭后再次打开，<b>When</b> 查看，<b>Then</b> 已选员工保留勾选状态不重置。</li>
+  <li><b>Given</b> 员工 sheet，<b>When</b> 未选员工直接完成，<b>Then</b> 允许关闭，回填区显示「请选择」。</li>
+</ol>
+<p><b>快速消费</b></p>
+<ol start="29">
+  <li><b>Given</b> 快速消费页，<b>When</b> 不输入金额点「去收款」，<b>Then</b> toast「请先输入金额」，不跳转。</li>
+  <li><b>Given</b> 快速消费页，<b>When</b> 输入金额后点「去收款」，<b>Then</b> 进入去收款页并显示该金额。</li>
+  <li><b>Given</b> 快速消费页，<b>When</b> 点「员工」行，<b>Then</b> 打开选择员工 sheet，选填。</li>
+  <li><b>Given</b> 快速消费页，<b>When</b> 点「备注」行，<b>Then</b> 打开备注 sheet，可输入 ≤200 字，计数实时更新。</li>
+  <li><b>Given</b> 去收款页，<b>When</b> 修改金额，<b>Then</b> 键盘可改，员工/备注与快速消费页共享同步。</li>
+  <li><b>Given</b> 快速消费，<b>When</b> 从 s4 选会员后进入，<b>Then</b> 顶部显示会员卡；选散客后显示散客卡。</li>
+</ol>
+<p><b>金额格式边界</b></p>
+<ol start="35">
+  <li><b>Given</b> 金额键盘，<b>When</b> 输入 <code>.5</code>，<b>Then</b> 以「.」开头被拒绝，不进入。</li>
+  <li><b>Given</b> 金额键盘，<b>When</b> 输入 <code>0123</code>，<b>Then</b> 前导 0 剔除，结果为 <code>123</code>。</li>
+  <li><b>Given</b> 金额键盘，<b>When</b> 输入 <code>999999.999</code>，<b>Then</b> 小数第 3 位被拒；总值不超过 999999.99。</li>
+  <li><b>Given</b> 金额键盘，<b>When</b> 输入 <code>9999999</code>，<b>Then</b> 超上限被拒。</li>
+  <li><b>Given</b> 金额键盘，<b>When</b> 输入 <code>58.95</code>，<b>Then</b> 合法显示；再输数字被拒（小数已 2 位）。</li>
+  <li><b>Given</b> 添加 sheet 应收/实收，<b>When</b> 输入超过 999999.99 或 2 位以上小数，<b>Then</b> 自动截断/封顶。</li>
+</ol>
+<p><b>下一步 / 底部</b></p>
+<ol start="41">
+  <li><b>Given</b> 购物车为空，<b>When</b> 点「下一步」，<b>Then</b> toast「请先选择项目」。</li>
+  <li><b>Given</b> 购物车有项，<b>When</b> 点「下一步」，<b>Then</b> toast「已进入开单结账，请按现有流程完成结算」（线上：进入原有结算页）。</li>
+  <li><b>Given</b> s1/s5，<b>When</b> 点底部购物车图标，<b>Then</b> 展开购物车明细 sheet（沿用线上现有实现）。</li>
+  <li><b>Given</b> 任意页，<b>When</b> 点「挂单」，<b>Then</b> toast「已挂单」（线上按现有逻辑）。</li>
+</ol>
+
+<!-- ===================== 模块 11 ===================== -->
+<h2 id="m11"><span class="no">11</span>非功能（极简）</h2>
+<ul>
+  <li>画布与动效对齐原型 390 × 844。</li>
+  <li>原型为静态单页，所有状态为内存模拟；刷新重置。</li>
+  <li>埋点：无专表；若现网统一规范另案。</li>
+  <li>员工/价目数据为演示资源；正式接入真实数据源。</li>
+  <li>本期仅单店（与线上一致）。</li>
+</ul>
+
+<!-- ===================== 模块 12 ===================== -->
+<h2 id="m12"><span class="no">12</span>交付物</h2>
+<table>
+  <tr><th>交付</th><th>说明</th></tr>
+  <tr><td>本文 <code>PRD-开单结账.md</code></td><td>开发与测试准稿</td></tr>
+  <tr><td>交互原型 <code>index.html</code></td><td>唯一可视依据</td></tr>
+  <tr><td><code>PRD-开单结账.html</code></td><td>PRD 自包含 HTML 预览版</td></tr>
+</table>
+<p>开发与测试只需 <b>PRD + 原型</b>。冲突时以原型界面为准修正 PRD。</p>
+
+<div class="foot">PRD：开单结账 · v1.0 · 2026-08-20 · 交互原型 index.html（390 × 844）</div>
+
+</div>
+
+<script>
+(function(){
+  var items = [
+    { id:'howto', no:'—', t:'怎么读这份 PRD' },
+    { id:'m1', no:'1', t:'背景 / 目标 / 范围 / 能力映射' },
+    { id:'m2', no:'2', t:'用户场景与成功标准' },
+    { id:'m3', no:'3', t:'信息架构与页面清单' },
+    { id:'m4', no:'4', t:'状态机' },
+    { id:'m5', no:'5', t:'交互细则 / 异常流' },
+    { id:'m6', no:'6', t:'功能规格' },
+    { id:'m7', no:'7', t:'数据模型与接口约定' },
+    { id:'m8', no:'8', t:'业务规则' },
+    { id:'m9', no:'9', t:'文案清单与权限' },
+    { id:'m10', no:'10', t:'验收 P0 + 造数场景' },
+    { id:'m11', no:'11', t:'非功能（极简）' },
+    { id:'m12', no:'12', t:'交付物' }
+  ];
+  var toc = document.getElementById('toc');
+  var html = '';
+  items.forEach(function(it){
+    html += '<a href="#'+it.id+'" data-target="'+it.id+'"><span class="no">'+it.no+'</span>'+it.t+'</a>';
+  });
+  toc.innerHTML = html;
+  var links = toc.querySelectorAll('a');
+  function onScroll(){
+    var pos = window.scrollY + 80;
+    var cur = 'howto';
+    items.forEach(function(it){
+      var el = document.getElementById(it.id);
+      if (el && el.offsetTop <= pos) cur = it.id;
+    });
+    links.forEach(function(a){
+      a.classList.toggle('on', a.getAttribute('data-target') === cur);
+    });
+  }
+  window.addEventListener('scroll', onScroll);
+  onScroll();
+})();
+</script>
+</body>
+</html>
