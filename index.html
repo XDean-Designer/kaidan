@@ -19,9 +19,53 @@
   html, body { height:100%; }
   body {
     background:#e9e9eb;
-    display:flex; justify-content:center; align-items:flex-start;
+    display:flex; align-items:flex-start;
     font-family:'PingFang SC','Noto Sans SC','Microsoft YaHei',-apple-system,'Helvetica Neue',sans-serif;
   }
+
+  /* ===== 左侧链路导航 ===== */
+  .site-nav {
+    position:fixed; left:0; top:0; bottom:0; width:200px; z-index:200;
+    background:#1c1c1e; color:#e8e8e8;
+    display:flex; flex-direction:column;
+    overflow-y:auto;
+  }
+  .site-nav .nav-brand { padding:18px 18px 14px; border-bottom:1px solid rgba(255,255,255,.08); margin-bottom:8px; }
+  .site-nav .nav-brand .t { font-size:15px; font-weight:700; color:#fff; line-height:1.4; }
+  .site-nav .nav-brand .s { font-size:11px; color:#9a9a9a; margin-top:4px; }
+  .site-nav .nav-group { padding:0 10px; margin-bottom:6px; }
+  .site-nav .nav-group.grow { margin-top:auto; }
+  .site-nav .g-t { font-size:11px; color:#9a9a9a; padding:8px 8px 4px; }
+  .site-nav .nav-item {
+    display:flex; align-items:center; gap:8px; width:100%;
+    padding:9px 8px; border:none; background:transparent; color:#c8c8c8;
+    font-family:inherit; font-size:13px; text-align:left; cursor:pointer;
+    border-radius:8px; -webkit-tap-highlight-color:transparent;
+  }
+  .site-nav .nav-item:hover { background:rgba(255,255,255,.06); color:#fff; }
+  .site-nav .nav-item.on { background:rgba(243,47,65,.2); color:#fff; font-weight:600; }
+  .site-nav .nav-item .idx {
+    width:18px; height:18px; border-radius:50%; flex-shrink:0;
+    background:rgba(255,255,255,.12); color:#fff; font-size:11px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .site-nav .nav-item.on .idx { background:#F32F41; }
+  .site-nav .nav-arrow { padding:0 8px 2px; font-size:12px; color:#6b6b6b; line-height:1; }
+  .site-nav .nav-link {
+    display:flex; align-items:center; gap:8px; padding:9px 8px;
+    color:#c8c8c8; text-decoration:none; font-size:13px; border-radius:8px;
+  }
+  .site-nav .nav-link:hover { background:rgba(255,255,255,.06); color:#fff; }
+
+  .stage {
+    flex:1; min-width:0; display:flex; justify-content:center; align-items:flex-start;
+    margin-left:200px; padding:24px 20px 40px;
+  }
+  @media (max-width: 760px) {
+    .site-nav { display:none; }
+    .stage { margin-left:0; padding:0; }
+  }
+
   #frame {
     position:relative; width:390px; height:844px;
     background:#f7f7f7;
@@ -738,6 +782,32 @@
 </style>
 </head>
 <body>
+<aside class="site-nav">
+  <div class="nav-brand">
+    <div class="t">RTB 开单结账</div>
+    <div class="s">高保真交互原型</div>
+  </div>
+  <div class="nav-group">
+    <div class="g-t">页面链路</div>
+    <button class="nav-item" data-target="s1" onclick="go('s1')"><span class="idx">1</span>散客开单</button>
+    <div class="nav-arrow">↓</div>
+    <button class="nav-item" data-target="s2" onclick="go('s2')"><span class="idx">2</span>快速消费</button>
+    <div class="nav-arrow">↓</div>
+    <button class="nav-item" data-target="s3" onclick="go('s3')"><span class="idx">3</span>快速消费去收款</button>
+    <div class="nav-arrow">↓</div>
+    <button class="nav-item" data-target="s4" onclick="go('s4')"><span class="idx">4</span>选择顾客</button>
+    <div class="nav-arrow">↓</div>
+    <button class="nav-item" data-target="s5" onclick="go('s5')"><span class="idx">5</span>会员开单</button>
+  </div>
+  <div class="nav-group grow">
+    <div class="g-t">文档</div>
+    <a class="nav-link" href="PRD-开单结账.html" target="_blank">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 2h8l6 6v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2z"/><path d="M14 2v6h6"/></svg>
+      PRD 预览
+    </a>
+  </div>
+</aside>
+<div class="stage">
 <div id="frame">
   <!-- ============ 页面1 散客开单 ============ -->
   <div class="screen active" id="s1" data-name="散客开单">
@@ -1447,6 +1517,7 @@
 
   <div id="toast"></div>
 </div>
+</div>
 
   <script>
     var navStack = ['s1'];
@@ -1454,6 +1525,9 @@
     function activate(id) {
       document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
       document.getElementById(id).classList.add('active');
+      document.querySelectorAll('.site-nav .nav-item').forEach(function(n){
+        n.classList.toggle('on', n.getAttribute('data-target') === id);
+      });
     }
 
     function go(id) {
