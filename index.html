@@ -1,0 +1,2247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>RTB 开单结账 - 高保真交互原型</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  :root {
+    --brand: #F32F41; --brand-soft: #FFF2F2; --brand-border: #FFD5D9;
+    --bg-page: #F7F7F7; --card: #fff; --text: #1a1a1a; --text-sec: #929292; --text-mid: #666;
+    --border: #D7D7D5; --border-light: #E8E8E8; --success: #2BA471; --success-soft: #E8F8F2;
+    --card-divider: rgba(0, 0, 0, 0.04);
+    --input-border: #D7D7D5; --input-border-focus: #C2C4CC; --input-bg: #F7F7F7;
+    --font-data: "TCloudNumber", "DIN Alternate", "Helvetica Neue", monospace;
+    --font-text: "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --safe-bottom: 34px;
+  }
+  html, body { height:100%; }
+  body {
+    background:#e9e9eb;
+    display:flex; justify-content:center; align-items:flex-start;
+    font-family:'PingFang SC','Noto Sans SC','Microsoft YaHei',-apple-system,'Helvetica Neue',sans-serif;
+  }
+  #frame {
+    position:relative; width:390px; height:844px;
+    background:#f7f7f7;
+    overflow:hidden;
+    box-shadow:0 0 40px rgba(0,0,0,.25);
+  }
+  .screen { position:absolute; top:0; left:0; width:390px; height:100%; background:#f7f7f7; display:none; }
+  .screen.active { display:block; }
+
+  /* ===== 可滚动内容区（用于长页面 S1/S5） ===== */
+  .scroll {
+    position:absolute; top:97px; left:0; right:0; bottom:62px;
+    overflow-y:auto; overflow-x:hidden;
+    -webkit-overflow-scrolling:touch;
+    z-index:10;
+  }
+  .scroll::-webkit-scrollbar { width:0; height:0; }
+  .page { position:relative; height:949px; }
+
+  /* ===== 状态栏 ===== */
+  .status-bar {
+    position:absolute; top:0; left:0; width:390px; height:53px;
+    background:#fff; display:flex; align-items:flex-start; justify-content:space-between;
+    padding:18px 26px 0 27px; z-index:30;
+  }
+  .status-bar .time { font-family:'SF Pro Text','PingFang SC',sans-serif; font-weight:600; font-size:17px; letter-spacing:-.4px; color:#1a1a1a; line-height:21px; }
+  .status-bar .icons { display:flex; gap:2px; align-items:flex-start; height:13px; margin-top:2px; }
+  .status-bar .icons img { display:block; }
+
+  /* ===== 导航栏 ===== */
+  .nav-bar {
+    position:absolute; top:53px; left:0; width:390px; height:44px;
+    background:#fff; z-index:30;
+  }
+  .nav-bar .title {
+    position:absolute; left:159px; top:10px; width:72px;
+    font-size:18px; font-weight:500; color:#1a1a1a; text-align:center;
+    white-space:nowrap;
+  }
+  .nav-bar .date { position:absolute; left:294px; top:14px; font-size:12px; font-weight:500; color:#1a1a1a; white-space:nowrap; }
+  .nav-bar .btn-back { position:absolute; left:10px; top:10px; width:24px; height:24px; border:none; background:none; padding:0; cursor:pointer; }
+  .nav-bar .btn-back img { width:24px; height:24px; display:block; }
+  .nav-bar .ic-right { position:absolute; left:364px; top:14px; width:16px; height:16px; }
+  .nav-bar .ic-right img { width:16px; height:16px; display:block; }
+
+  /* ===== 顾客卡（深色渐变卡） ===== */
+  .cust-card {
+    position:absolute; left:16px; top:107px; width:358px; height:94px;
+    border-radius:12px; overflow:hidden;
+    background:linear-gradient(to left,#88634b 0%,#242728 100%);
+    z-index:20;
+  }
+  .cust-card .deco {
+    position:absolute; right:-148px; top:-54px; width:458px; height:345px;
+    opacity:.5; transform:rotate(63.23deg); mix-blend-mode:screen;
+    -webkit-mask-image:url('assets/mask_hex.svg'); mask-image:url('assets/mask_hex.svg');
+    -webkit-mask-size:358px 94px; mask-size:358px 94px;
+    -webkit-mask-position:-65px 161px; mask-position:-65px 161px;
+    -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+    background:url('assets/card_bg.png') center/cover no-repeat;
+  }
+  .cust-card .deco-v {
+    position:absolute; left:142px; top:137px; font-size:130px; font-weight:500;
+    color:#fff; opacity:.05; font-family:'Source Han Serif CN','Noto Serif SC',serif;
+    transform:rotate(13.13deg); line-height:1; letter-spacing:-20px; pointer-events:none;
+    -webkit-mask-image:url('assets/mask_hex.svg'); mask-image:url('assets/mask_hex.svg');
+    -webkit-mask-size:358px 94px; mask-size:358px 94px;
+    -webkit-mask-position:-126px 72px; mask-position:-126px 72px;
+    -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+  }
+  .cust-card .avatar {
+    position:absolute; left:32px; top:25px; width:44px; height:44px;
+    border-radius:50%; overflow:hidden;
+  }
+  .cust-card .avatar img { width:46px; height:46px; object-fit:cover; display:block; }
+  .cust-card .name {
+    position:absolute; left:88px; top:26px; font-size:16px; font-weight:500; color:#f8dfba;
+    background:linear-gradient(105.67deg,#f8dfba 8.4%,#d1a478 94%);
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    white-space:nowrap;
+  }
+  .cust-card .sub {
+    position:absolute; left:88px; top:51px; font-size:12px; color:#f8dfba; opacity:.7;
+    background:linear-gradient(118.57deg,#f8dfba 8.4%,#d1a478 94%);
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+    white-space:nowrap;
+  }
+  .cust-card .btn-select {
+    position:absolute; left:278px; top:33px; width:80px; height:28px;
+    border:none; border-radius:4px; cursor:pointer;
+    background:linear-gradient(110.17deg,#f8dfba 8.4%,#d1a478 94%);
+    font-size:12px; color:#1a1a1a; padding:0;
+  }
+  /* 深色卡（散客/会员信息卡 变体） */
+  .cust-card.dark { background:#333; }
+  .cust-card.dark .deco { display:none; }
+  .cust-card.dark .deco-v { display:none; }
+  .cust-card.dark .name { color:#fff; -webkit-text-fill-color:#fff; background:none; }
+  .cust-card.dark .sub { color:#fff1d6; -webkit-text-fill-color:#fff1d6; background:none; opacity:1; }
+  .cust-card .btn-grad {
+    border:none; cursor:pointer; border-radius:16px; height:32px;
+    background:linear-gradient(to right,#ffe6ce,#ffba75);
+    font-size:12px; color:#000; font-weight:400; padding:0;
+  }
+
+  /* ===== 散客卡（63:1138 新版，位于 S1 滚动内容顶部 = 视口 y107） ===== */
+  .guest-card {
+    position:absolute; left:12px; top:10px; width:366px; height:92px;
+    background:#333; border-radius:12px; z-index:20;
+  }
+  .guest-card .avatars {
+    position:absolute; left:16px; top:27px;
+    display:flex; gap:6px; align-items:center;
+  }
+  .guest-card .avatars img { width:38px; height:38px; border-radius:50%; display:block; }
+  /* 性别头像：选中彩色，未选中黑白 */
+  .guest-card[data-g="male"] .avatars img:nth-child(2) { filter:grayscale(1); opacity:.55; }
+  .guest-card[data-g="female"] .avatars img:nth-child(1) { filter:grayscale(1); opacity:.55; }
+  .guest-card .nm {
+    position:absolute; left:108px; top:36px;
+    font-family:'Noto Sans SC'; font-weight:500; font-size:16px;
+    color:#fff; line-height:19px; white-space:nowrap;
+  }
+  .guest-card .btn {
+    position:absolute; left:270px; top:30px; width:80px; height:32px;
+    border:none; border-radius:16px; cursor:pointer;
+    background:linear-gradient(to right,#ffe6ce,#ffba75);
+    font-family:'Noto Sans SC'; font-weight:400; font-size:12px; color:#000;
+    padding:0; line-height:32px; text-align:center;
+  }
+
+  /* ===== 内容面板 ===== */
+  .panel {
+    position:absolute; left:0; width:390px;
+    background:linear-gradient(to bottom,#ffffff 0%,#ffffff 10%,#f5f6fa 100%);
+    border-radius:14px 14px 0 0;
+  }
+
+  /* ===== Tab ===== */
+  .tab { position:absolute; left:0; width:390px; z-index:15; }
+  .tab .item { position:absolute; top:0; font-size:16px; padding:2px 12px; letter-spacing:.32px; cursor:pointer; }
+  .tab .item.proj { left:124px; font-weight:500; color:#1a1a1a; }
+  .tab .item.prod { left:209px; font-weight:400; color:#6c7279; }
+  .tab .item.prod.on { font-weight:500; color:#1a1a1a; }
+  .tab .item.proj:not(.on) { font-weight:400; color:#6c7279; }
+  .tab .ind {
+    position:absolute; left:139px; top:24px; width:27px; height:3px;
+    border-radius:2px; background:#ff0f23; transition:left .2s ease;
+  }
+  .tab .ind.prod { left:224px; }
+  .new-badge { position:absolute; left:237px; width:29px; height:17px; z-index:15; }
+  .new-badge img { width:29px; height:17px; display:block; }
+  .new-badge span { position:absolute; left:14px; top:6px; transform:translateX(-50%); font-size:9px; font-weight:500; color:#fff; white-space:nowrap; }
+
+  /* ===== 搜索框 ===== */
+  .search {
+    position:absolute; left:16px; width:358px; height:42px;
+    background:#fff; border:0.5px solid #e8e8e8; border-radius:8px; z-index:15;
+  }
+  .search img.ic { position:absolute; left:12px; top:13px; width:16px; height:16px; }
+  .search .ph { position:absolute; left:34px; top:11px; font-size:14px; color:#929292; white-space:nowrap; }
+  .search .go {
+    position:absolute; left:306px; top:8px; width:0; height:26px;
+    border-left:0.5px solid #e8e8e8;
+  }
+  .search .go-btn { position:absolute; left:318px; top:11px; font-size:14px; color:#929292; border:none; background:none; cursor:pointer; padding:0; }
+
+  /* ===== 快速消费行 ===== */
+  .quick-row {
+    position:absolute; left:16px; width:358px; height:42px;
+    background:#f7f7f7; border-radius:21px; z-index:15;
+    display:flex; align-items:center; border:none; cursor:pointer;
+  }
+  .quick-row img.ic { position:absolute; left:12px; top:13px; width:16px; height:16px; }
+  .quick-row .label { position:absolute; left:34px; top:11px; font-size:14px; font-weight:600; color:#1a1a1a; white-space:nowrap; }
+  .quick-row .arrow { position:absolute; right:11px; top:13px; width:16px; height:16px; display:flex; align-items:center; justify-content:center; }
+  .quick-row .arrow img { width:16px; height:16px; display:block; }
+
+  /* ===== 左侧分类栏 ===== */
+  .side-nav { position:absolute; left:0; width:74px; z-index:14; }
+  .side-nav .it { position:relative; width:74px; height:45px; display:flex; align-items:center; justify-content:center; font-size:12px; color:#929292; background:#f7f7f7; }
+  .side-nav .it.on { color:#f32f41; font-weight:500; background:#fff; }
+  .side-nav .it.tl { border-radius:0 0 8px 0; }
+  .side-nav .it.tr { border-radius:0 8px 0 0; }
+  .side-nav .it .num {
+    position:absolute; top:7px; left:52px; width:14px; height:14px;
+    background:#f32f41; border-radius:50%; color:#fff; font-size:10px; font-weight:500;
+    display:flex; align-items:center; justify-content:center; line-height:1;
+  }
+
+  /* ===== 项目卡片 ===== */
+  .cat-title { position:absolute; left:86px; font-size:14px; font-weight:500; color:#1a1a1a; z-index:14; }
+  .cat-title.lg { font-size:15px; }
+  /* 产品 tab：无侧边栏，卡片/分类标题贴左 */
+  .cat-title[data-cat="prod"] { left:86px; }
+  .proj-card[data-cat="prod"] { left:86px; width:288px; }
+  /* 产品 tab 侧边栏 */
+  .side-nav[data-cat="prod"] { top:283px; }
+  .proj-card { position:absolute; left:86px; width:288px; z-index:14; }
+  .proj-card .thumb { position:absolute; left:0; top:0; width:89px; height:89px; border-radius:6px; overflow:hidden; }
+  .proj-card .thumb img { width:89px; height:89px; object-fit:cover; display:block; }
+  .proj-card .nm { position:absolute; left:97px; font-size:16px; font-weight:500; color:#1a1a1a; line-height:22px; }
+  .proj-card .pr { position:absolute; left:97px; color:#f32f41; white-space:nowrap; }
+  .proj-card .pr .sym { font-size:13px; }
+  .proj-card .pr .int { font-size:18px; }
+  .proj-card .pr .dec { font-size:12px; }
+  .proj-card .add {
+    position:absolute; width:20px; height:20px; border:none; background:none; padding:0; cursor:pointer;
+  }
+  .proj-card .add img { width:20px; height:20px; display:block; }
+
+  .empty-tile { position:absolute; left:194px; width:72px; z-index:14; text-align:center; }
+  .empty-tile .box { width:72px; height:72px; background:#f7f7f7; border-radius:6px; display:flex; align-items:center; justify-content:center; }
+  .empty-tile .box img { width:40px; height:40px; opacity:.6; }
+  .empty-tile .t { margin-top:4px; font-size:12px; color:#929292; }
+
+  /* ===== 提示条 ===== */
+  .hint-bar {
+    position:absolute; left:0; bottom:62px; width:390px; height:34px;
+    background:#fff2f2; display:flex; align-items:center; z-index:21;
+  }
+  .hint-bar img { position:absolute; left:15px; top:9px; width:16px; height:16px; }
+  .hint-bar span { position:absolute; left:38px; top:8px; font-size:12px; color:#f32f41; white-space:nowrap; }
+
+  /* ===== 底部操作栏（固定视口底部） ===== */
+  .bottom-bar {
+    position:absolute; left:0; bottom:0; width:390px; height:62px;
+    background:#fff; box-shadow:0 -4px 4px rgba(0,0,0,.1); z-index:20;
+  }
+  .bottom-bar .btn-add { position:absolute; left:16px; top:10px; width:42px; height:42px; border:none; background:none; padding:0; cursor:pointer; }
+  .bottom-bar .btn-add img { width:42px; height:42px; display:block; }
+  .btn-guadan {
+    position:absolute; left:194px; top:10px; width:80px; height:42px;
+    background:#fff2f2; color:#f32f41; font-size:16px; font-weight:500;
+    border:none; border-radius:6px; cursor:pointer;
+  }
+  .btn-next {
+    position:absolute; left:284px; top:10px; width:96px; height:42px;
+    background:#f32f41; color:#fff; font-size:16px; font-weight:500;
+    border:none; border-radius:6px; cursor:pointer;
+  }
+  .bottom-bar .amount { position:absolute; left:55px; top:20px; padding-left:16px; color:#f32f41; display:flex; align-items:baseline; gap:2px; }
+  .bottom-bar .amount .lbl { font-size:12px; font-weight:500; }
+  .bottom-bar .amount .val { font-size:18px; font-weight:500; }
+
+  /* ===== 金额卡 ===== */
+  .amt-card { position:absolute; left:16px; width:358px; background:#fff; border-radius:12px; overflow:hidden; z-index:14; }
+  .amt-card .lbl { position:absolute; left:12px; top:12px; font-size:12px; color:#8f8f94; white-space:nowrap; }
+  .amt-card .row-label { position:absolute; left:12px; font-size:14px; color:#1a1a1a; white-space:nowrap; }
+  .amt-card .placeholder { position:absolute; left:12px; font-size:14px; color:#b2b2b2; white-space:nowrap; }
+  .amt-card .opt { position:absolute; right:12px; font-size:14px; color:#929292; display:flex; align-items:center; gap:4px; white-space:nowrap; }
+  .amt-card .opt img { width:16px; height:16px; }
+  .amt-card .cursor { width:2px; height:30px; background:#f22e4a; display:inline-block; }
+  .amt-card.clickable { cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .amt-card.clickable:active { background:#f7f7f7; }
+  .amt-card .opt span.val { color:#1a1a1a; font-weight:500; max-width:200px; overflow:hidden; text-overflow:ellipsis; }
+  .amt-card .placeholder.filled { color:#1a1a1a; font-weight:500; max-width:224px; overflow:hidden; text-overflow:ellipsis; }
+
+  /* ===== 数字键盘 ===== */
+  .keypad {
+    position:absolute; left:0; bottom:0; width:390px; height:292px;
+    background:#e5e5e8; z-index:20;
+  }
+  .keypad .key {
+    position:absolute; background:#fff; border-radius:6px;
+    font-size:22px; font-weight:500; color:#1a1a1a;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    font-family:'Noto Sans SC',sans-serif; user-select:none;
+  }
+  .keypad .key.del { font-size:18px; }
+  .keypad .key-pay {
+    position:absolute; left:294px; top:77.5px; width:90px; height:208.5px;
+    background:#f7f7f7; border-radius:8px; cursor:pointer;
+    display:flex; flex-direction:column; align-items:flex-start; justify-content:center;
+    padding-left:24px; gap:2px;
+    color:#666; font-size:14px; font-weight:500;
+  }
+  .keypad .key-pay.on { background:#f22e4a; color:#fff; }
+  .keypad .key-pay .sub { font-size:16px; }
+
+  /* ===== 选择顾客页 ===== */
+  .pick-search {
+    position:absolute; top:53px; left:0; width:390px; height:50px;
+    background:#fff; display:flex; align-items:center; gap:12px; padding:0 12px; z-index:20;
+  }
+  .pick-search .box {
+    flex:1; height:32px; background:#f5f5f5; border-radius:16px;
+    display:flex; align-items:center; gap:8px; padding:0 12px;
+  }
+  .pick-search .box img { width:16px; height:16px; }
+  .pick-search .box span { flex:1; font-size:14px; color:#878787; white-space:nowrap; overflow:hidden; }
+  .pick-search .cancel { font-size:15px; font-weight:500; color:#878787; border:none; background:none; cursor:pointer; white-space:nowrap; }
+
+  .pick-list { position:absolute; top:103px; left:0; width:390px; bottom:0; overflow:hidden; background:#fff; }
+  .pick-group-h {
+    width:390px; height:28px; background:#f9f9f9;
+    display:flex; align-items:center; padding:0 12px;
+    font-size:15px; font-weight:700; color:#111;
+  }
+  .pick-row {
+    width:390px; height:74px; display:flex; align-items:center; gap:10px;
+    padding:14px 28px 14px 12px; cursor:pointer;
+  }
+  .pick-row:active { background:#fafafa; }
+  .pick-row .avatar { width:44px; height:44px; border-radius:50%; overflow:hidden; flex:none; }
+  .pick-row .avatar img { width:44px; height:44px; object-fit:cover; display:block; }
+  .pick-row .info { flex:1; min-width:0; display:flex; flex-direction:column; gap:4px; }
+  .pick-row .info .line1 { display:flex; align-items:center; gap:6px; }
+  .pick-row .info .line1 .nm { font-size:16px; font-weight:700; color:#111; white-space:nowrap; }
+  .pick-row .info .line1 .vip {
+    font-size:10px; padding:2px 5px; border-radius:2px; background:#333; color:#fff; font-weight:700; letter-spacing:.1px;
+  }
+  .pick-row .info .line1 .vip.grad { background:#333; font-weight:400; }
+  .pick-row .info .line1 .vip.grad b {
+    background-image:linear-gradient(to right,#ffe6ce,#ffba75);
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent;
+    font-weight:400;
+  }
+  .pick-row .info .line1 .cnt { font-size:13px; color:#111; white-space:nowrap; }
+  .pick-row .info .line1 .phone { flex:1; text-align:right; font-size:14px; color:#888; white-space:nowrap; }
+  .pick-row .info .sub { font-size:12px; color:#999; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .index-bar {
+    position:absolute; left:370px; top:108px; width:18px; height:600px;
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    font-size:10px; font-weight:700; color:#ffcc9d; line-height:14px; padding-top:80px;
+    z-index:25; pointer-events:none;
+  }
+  .index-bar span { display:block; }
+
+  /* ===== 会员开单 信息卡 ===== */
+  .member-card {
+    position:absolute; left:12px; top:10px; width:366px; height:200px;
+    background:#333; border-radius:12px; padding:14px 16px 8px; z-index:20;
+    overflow:hidden;
+  }
+  .member-card .row1 { display:flex; align-items:center; gap:12px; }
+  .member-card .avatar { width:44px; height:44px; border-radius:50%; overflow:hidden; flex:none; }
+  .member-card .avatar img { width:44px; height:44px; object-fit:cover; display:block; }
+  .member-card .info { flex:1; display:flex; flex-direction:column; gap:2px; }
+  .member-card .info .nm-line { display:flex; align-items:center; gap:5px; }
+  .member-card .info .nm { font-size:16px; font-weight:500; color:#fff; white-space:nowrap; }
+  .member-card .info .vip {
+    font-size:9px; font-weight:700; color:#3a2200; padding:2px 4px; border-radius:7px;
+    background:linear-gradient(to right,#ffe6ce,#ffba75); white-space:nowrap;
+  }
+  .member-card .info .last { font-size:12px; color:#fff1d6; white-space:nowrap; }
+  .member-card .ops { display:flex; gap:10px; align-items:center; }
+  .member-card .ops .btn { height:32px; border-radius:16px; border:none; cursor:pointer; font-size:12px; color:#000; background:linear-gradient(to right,#ffe6ce,#ffba75); }
+  .member-card .ops .btn.b1 { width:56px; }
+  .member-card .ops .btn.b2 { width:80px; }
+  .member-card .cards { display:flex; align-items:center; gap:4px; padding-top:10px; }
+  .member-card .cards .lbl { font-size:14px; color:#fff1d6; }
+  .member-card .cards .num { font-size:20px; font-weight:500; color:#fff1d6; }
+  .member-card .cards .unit { font-size:14px; color:#fff1d6; }
+  .member-card .card-list { padding-top:10px; }
+  .member-card .card-box {
+    background:linear-gradient(to right,#fdfbf9,#fcf7ee); border-radius:6px;
+    padding:11px 10px 8px; display:flex; flex-direction:column; gap:8px;
+  }
+  .member-card .card-item { display:flex; align-items:center; gap:10px; }
+  .member-card .card-item .tag {
+    border:1px solid #f32f41; color:#f32f41; font-size:10px; padding:0 6px; border-radius:3px; white-space:nowrap;
+  }
+  .member-card .card-item .nm { flex:1; font-size:12px; color:#333; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .member-card .card-item .val { font-size:12px; color:#333; white-space:nowrap; }
+
+  /* ===== 快速消费/去收款页 顶部卡片按身份切换 ===== */
+  .screen .gcard, .screen .mcard { position:absolute; left:12px; top:107px; z-index:20; }
+  .screen.cust-guest .gcard { display:block; }
+  .screen.cust-guest .mcard { display:none; }
+  .screen.cust-member .gcard { display:none; }
+  .screen.cust-member .mcard { display:block; }
+  .amt-card.a1 { top:213px; height:95px; }
+  .amt-card.a2 { top:316px; height:44px; }
+  .amt-card.a3 { top:368px; height:76px; }
+  .screen.cust-member .amt-card.a1 { top:321px; }
+  .screen.cust-member .amt-card.a2 { top:424px; }
+  .screen.cust-member .amt-card.a3 { top:476px; }
+
+  /* ===== 通用 ===== */
+  /* ===== 添加项目/产品 sheet 弹窗 ===== */
+  .addsheet-mask {
+    position:absolute; inset:0; background:rgba(0,0,0,.45); z-index:80;
+    display:none;
+  }
+  .addsheet-mask.show { display:block; }
+  .addsheet {
+    position:absolute; left:0; right:0; bottom:0;
+    max-height:85%; background:#f7f7f7;
+    border-radius:16px 16px 0 0; display:flex; flex-direction:column; overflow:hidden;
+    animation:sheetUp .22s ease;
+  }
+  @keyframes sheetUp { from { transform:translateY(40px); opacity:.6; } to { transform:none; opacity:1; } }
+  .addsheet__body { overflow-y:auto; padding:0 12px 16px; }
+  .addsheet__grab { width:36px; height:4px; border-radius:2px; background:#e2e2e4; margin:8px auto 0; }
+  .addsheet__head {
+    padding:6px 16px 12px; border-bottom:1px solid #f0f0f0; background:#fff;
+  }
+  .addsheet__title { font-size:17px; font-weight:600; color:#1a1a1a; line-height:24px; }
+  .addsheet__price { font-size:15px; font-weight:500; color:#f32f41; margin-top:2px; }
+
+  /* 四宫格 */
+  .addsheet-grid {
+    display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px;
+  }
+  .addsheet-cell {
+    background:#fff; border-radius:12px; padding:10px 12px; min-height:66px;
+  }
+  .addsheet-cell .lbl { font-size:12px; color:#8f8f94; }
+  .addsheet-cell .val { margin-top:6px; font-size:16px; font-weight:500; color:#1a1a1a; }
+  .addsheet-cell .val.act { color:#f32f41; }
+  .addsheet-cell .row { display:flex; align-items:center; justify-content:space-between; margin-top:6px; }
+  .addsheet-cell .row .cur { font-size:16px; font-weight:500; color:#1a1a1a; }
+  .addsheet-cell .chev { width:16px; height:16px; display:flex; align-items:center; justify-content:center; }
+  .addsheet-cell .chev img { width:16px; height:16px; display:block; }
+  .addsheet-cell input.num {
+    width:100%; border:none; outline:none; background:none; font-size:16px; font-weight:500;
+    color:#1a1a1a; font-family:inherit; margin-top:6px;
+  }
+  /* 步进器 */
+  .stepper { display:flex; align-items:center; gap:0; margin-top:6px; }
+  .stepper .st-btn {
+    width:28px; height:28px; border-radius:6px; border:none; cursor:pointer;
+    background:#f2f2f2; color:#1a1a1a; font-size:16px; font-weight:500; line-height:1;
+  }
+  .stepper .st-val { width:44px; text-align:center; font-size:16px; font-weight:500; color:#1a1a1a; }
+
+  /* 员工选择行 */
+  .addsheet-staff {
+    margin-top:12px; background:#fff; border-radius:12px; padding:10px 12px;
+    display:flex; align-items:flex-start; justify-content:space-between; gap:8px; cursor:pointer;
+  }
+  .addsheet-staff .lbl { flex-shrink:0; font-size:14px; color:#1a1a1a; font-weight:500; line-height:22px; }
+  .addsheet-staff .as-staff-list {
+    flex:1; min-width:0; display:flex; flex-direction:column; align-items:flex-end; gap:4px;
+  }
+  .addsheet-staff .as-staff-item { font-size:13px; line-height:18px; color:#1a1a1a; text-align:right; }
+  .addsheet-staff .as-staff-item.placeholder { color:#929292; }
+  .addsheet-staff .chev img { width:16px; height:16px; display:block; flex-shrink:0; }
+
+  /* 底部确认 */
+  .addsheet__foot {
+    padding:10px 16px 34px; background:#fff; border-top:1px solid #f0f0f0;
+  }
+  .btn-confirm {
+    width:100%; height:44px; border:none; border-radius:22px; cursor:pointer;
+    background:#f32f41; color:#fff; font-size:16px; font-weight:500; font-family:inherit;
+  }
+  .btn-confirm:active { opacity:.9; }
+
+  /* ===== 折扣标尺 sheet（对齐 card） ===== */
+  .ruler-sheet-mask {
+    position:absolute; inset:0; background:rgba(0,0,0,.45); z-index:90;
+    display:none;
+  }
+  .ruler-sheet-mask.show { display:block; }
+  .ruler-sheet {
+    position:absolute; left:0; right:0; bottom:0;
+    background:#fff; border-radius:16px 16px 0 0; padding:16px 16px 20px;
+    animation:sheetUp .22s ease;
+  }
+  .ruler-sheet__head { display:flex; align-items:center; justify-content:space-between; }
+  .ruler-sheet__title { font-size:16px; font-weight:600; color:#1a1a1a; }
+  .ruler-sheet__val { font-size:15px; font-weight:600; color:#f32f41; font-variant-numeric:tabular-nums; }
+  .mp-ruler-wrap { margin-top:8px; position:relative; padding:0 4px; }
+  .discount-ruler { position:relative; user-select:none; touch-action:none; }
+  .ruler--pill { position:relative; box-sizing:border-box; min-height:58px; padding:0; overflow:visible; }
+  .ruler--pill .discount-ruler__track {
+    position:relative; height:6px; border-radius:999px; margin:7px 10px 0;
+    background:#ededed; overflow:visible;
+  }
+  .ruler--pill .discount-ruler__fill {
+    position:absolute; left:0; top:0; height:100%; border-radius:999px;
+    background:linear-gradient(90deg,#FF7043 0%,#F32F41 100%); pointer-events:none;
+  }
+  .ruler--pill .discount-ruler__ticks { position:absolute; left:12px; right:12px; top:23px; height:35px; pointer-events:none; }
+  .ruler--pill .discount-ruler__tick {
+    position:absolute; top:0; width:2px; height:6px; background:#d7d7d5;
+    transform:translateX(-50%); border-radius:1px;
+  }
+  .ruler--pill .discount-ruler__tick.is-anchor { height:10px; background:#b2b2b2; }
+  .ruler--pill .discount-ruler__mark {
+    position:absolute; top:18px; transform:translateX(-50%);
+    font-size:12px; font-weight:400; line-height:17px; color:#929292; white-space:nowrap;
+  }
+  .ruler--pill .discount-ruler__thumb {
+    position:absolute; top:50%; width:20px; height:20px; margin-top:-10px; margin-left:-10px;
+    border-radius:50%; background:#FF7043; border:2px solid #fff;
+    box-shadow:0 1px 4px rgba(0,0,0,.12); cursor:grab; z-index:2; transition:transform .12s ease;
+    box-sizing:border-box;
+  }
+  .ruler--pill .discount-ruler__thumb:active { cursor:grabbing; transform:scale(1.06); }
+
+  /* ===== 员工选择 sheet（原样复制 card/demo.html） ===== */
+  .btn-main {
+    width: 100%; max-width: 370px; margin: 0 auto; display: flex; align-items: center; justify-content: center;
+    height: 48px; min-height: 48px; line-height: 1.2; padding: 0 12px; box-sizing: border-box;
+    text-align: center; border: none; border-radius: 12px; background: var(--brand); color: #fff;
+    font-size: 16px; font-weight: 500; cursor: pointer; font-family: inherit; gap: 4px;
+  }
+  .picker-mask { position: absolute; inset: 0; background: rgba(0,0,0,.45); z-index: 30; display: none; align-items: center; justify-content: center; padding: 0 32px; }
+  .picker-mask.show, .picker-mask.open { display: flex; }
+  #staffSheetMask { z-index: 95; }
+  .picker-mask--bottom { padding: 0; flex-direction: column; justify-content: flex-end; align-items: stretch; }
+  .picker-sheet { width: 100%; max-width: 326px; background: var(--card); border-radius: 16px; overflow: hidden; max-height: 90%; display: flex; flex-direction: column; }
+  .picker-sheet.tall { max-height: 75%; align-self: flex-end; width: 100%; max-width: none; border-radius: 12px 12px 0 0; }
+  .picker-mask--bottom .picker-sheet { width: 100%; max-width: none; margin: 0; flex: 0 1 auto; align-self: auto; border-radius: 16px 16px 0 0; max-height: 85%; min-height: 0; }
+  .picker-mask--bottom .picker-sheet.tall { max-height: 85%; align-self: auto; border-radius: 16px 16px 0 0; }
+  .picker-head { padding: 20px 20px 0; border-bottom: none; font-weight: 600; text-align: center; font-size: 17px; color: var(--text); line-height: 1.35; }
+  .picker-mask--bottom .picker-head { padding: 20px 20px 0; border-bottom: none; font-size: 17px; font-weight: 600; color: var(--text); text-align: center; line-height: 1.35; flex-shrink: 0; }
+  .picker-foot { padding: 12px 16px var(--safe-bottom); border-top: none; }
+  .picker-mask--bottom .picker-foot { padding: 8px 20px 40px; border-top: none; flex-shrink: 0; box-shadow: none; }
+
+  /* ===== 备注输入 sheet ===== */
+  .remark-sheet__body { padding: 16px 20px 8px; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+  .remark-sheet__body textarea {
+    width: 100%; box-sizing: border-box; min-height: 100px; resize: none;
+    border: 1px solid #eeeeee; border-radius: 12px; background: #FAFAFA;
+    padding: 12px; font-size: 15px; line-height: 1.5; color: #1a1a1a; font-family: inherit;
+    outline: none; display: block;
+  }
+  .remark-sheet__body textarea:focus { border-color: var(--brand-border); background: #fff; }
+  .remark-sheet__body .remark-count { margin-top: 8px; text-align: right; font-size: 12px; color: #929292; }
+  .add-card-staff-sheet__hint { margin: 0 16px 10px; font-size: 12px; line-height: 1.45; color: var(--text-sec); }
+  .add-card-staff-sheet__body { margin: 0 16px 16px; padding: 12px; background: #FAFAFA; border-radius: 12px; box-sizing: border-box; max-height: min(52vh, 420px); overflow-y: auto; }
+  .add-card-staff-sheet__body .detail-item__staff-block { margin: 0; }
+  .add-card-staff-sheet__body .detail-item__panel-row--staff-head { display: none; }
+  .bill-staff-sheet__body .detail-item__panel-row--staff-head { display: none; }
+  .detail-item__staff-block { border-bottom: none; position: relative; }
+  .detail-item__panel-row--staff-head { border-bottom: none; padding-bottom: 8px; }
+  .staff-card-scrim {
+    position: absolute; inset: -8px -4px -12px; z-index: 1;
+    border: none; padding: 0; margin: 0; cursor: pointer;
+    background: rgba(247, 247, 247, .42); border-radius: 12px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .staff-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px 8px;
+    padding: 2px 0 12px;
+    position: relative;
+    z-index: 2;
+    overflow: visible;
+  }
+  .staff-grid.is-morphing > .staff-card { justify-self: start; align-self: start; }
+  .staff-card {
+    position: relative;
+    min-height: 96px;
+    width: 100%;
+    box-sizing: border-box;
+    z-index: 1;
+    -webkit-tap-highlight-color: transparent;
+    will-change: transform, width;
+  }
+  .staff-card.is-dim { opacity: .36; pointer-events: none; filter: saturate(.85); }
+  .detail-item__staff-block--cards.is-picking { overflow: visible; }
+  .detail-item__staff-block--cards.is-picking .staff-grid { overflow: visible; pointer-events: none; }
+  .staff-card.is-editing { z-index: 6; pointer-events: auto; opacity: 1; filter: none; }
+  .staff-card__panel {
+    position: relative;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 96px;
+    padding: 10px 8px 8px;
+    border-radius: 12px;
+    background: #fff;
+    border: 1px solid #E8E8E8;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    color: #1a1a1a;
+    transition: border-color .22s ease, background .22s ease, box-shadow .28s cubic-bezier(.22,.82,.24,1);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .staff-card__panel:active { transform: scale(.97); }
+  .staff-card.is-done .staff-card__panel {
+    background: linear-gradient(180deg, #FFF8F8 0%, #FFF2F2 100%);
+    border-color: #FFD5D9;
+    box-shadow: inset 0 0 0 1px rgba(243, 47, 65, .04);
+    animation: staffDonePop .42s cubic-bezier(.22,.82,.24,1);
+  }
+  @keyframes staffDonePop {
+    0% { transform: scale(.96); }
+    55% { transform: scale(1.03); }
+    100% { transform: scale(1); }
+  }
+  /* Morph Split · 行内变宽；展开态无连体壳，仅独立圆角按钮 */
+  .staff-card.is-editing .staff-card__panel[data-face="designate"],
+  .staff-card.is-editing .staff-card__panel[data-face="role"] {
+    position: relative;
+    width: 100%;
+    height: 96px;
+    min-height: 96px;
+    padding: 0;
+    gap: 0;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
+    background: transparent;
+    cursor: default;
+    box-shadow: none;
+  }
+  .staff-card.is-editing .staff-card__panel[data-face="designate"]:active,
+  .staff-card.is-editing .staff-card__panel[data-face="role"]:active { transform: none; }
+  .staff-card.is-pinching .staff-card__panel[data-face="designate"],
+  .staff-card.is-pinching .staff-card__panel[data-face="role"] {
+    border: 1px solid #E8E8E8;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(26, 26, 26, .1);
+  }
+  .staff-card.is-pinching .staff-card__split { opacity: 0; visibility: hidden; pointer-events: none; }
+  .staff-card.is-expanding .staff-card__split { opacity: 1; visibility: visible; transition: opacity .11s ease .03s; }
+  @media (prefers-reduced-motion: reduce) {
+    .staff-card.is-editing .staff-card__panel { animation: none !important; }
+    .staff-card.is-done .staff-card__panel { animation: none !important; }
+    .staff-card { transition: none !important; }
+    .staff-card__panel { transition: none; }
+    .staff-card__split-btn { transition: none !important; }
+    .staff-card.is-expanding .staff-card__split { transition: none !important; }
+  }
+  .staff-card__split { display: flex; align-items: stretch; width: 100%; height: 100%; gap: 8px; box-sizing: border-box; background: transparent; }
+  .staff-card__split-btn {
+    position: relative;
+    flex: 1 1 0; min-width: 0;
+    margin: 0; padding: 0 8px;
+    border: 1px solid rgba(0,0,0,.06);
+    border-radius: 10px;
+    background: #fff;
+    color: #1a1a1a;
+    font-size: 15px; font-weight: 650; letter-spacing: .02em; line-height: 1.15;
+    font-family: inherit; cursor: pointer;
+    display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    -webkit-tap-highlight-color: transparent;
+    box-shadow: 0 2px 8px rgba(26, 26, 26, .06);
+    transition: background .18s ease, color .18s ease, transform .14s ease, box-shadow .18s ease;
+  }
+  .staff-card__split-btn:active { transform: scale(.97); box-shadow: 0 1px 4px rgba(26, 26, 26, .08); }
+  .staff-card__split-btn--des { color: #C62828; background: linear-gradient(180deg, #FFF9F9 0%, #FFF2F2 100%); border-color: rgba(243, 47, 65, .18); }
+  .staff-card__split-btn--guest { color: #4A667A; background: linear-gradient(180deg, #F8FAFC 0%, #F1F5F8 100%); border-color: rgba(74, 102, 122, .16); }
+  .staff-card__split-btn--role { color: #1a1a1a; background: linear-gradient(180deg, #FFFFFF 0%, #FAFAFA 100%); font-size: 14px; font-weight: 600; }
+  .staff-card__split-btn--role:nth-child(1) { color: #6B8F71; border-color: rgba(107, 143, 113, .22); }
+  .staff-card__split-btn--role:nth-child(2) { color: #6A7F96; border-color: rgba(106, 127, 150, .22); }
+  .staff-card__split-btn--role:nth-child(3) { color: #C62828; border-color: rgba(198, 40, 40, .18); }
+  .staff-card__split--3 .staff-card__split-btn { font-size: 14px; font-weight: 600; }
+  .staff-card__avatar {
+    width: 40px; height: 40px; border-radius: 20px; object-fit: cover;
+    background: var(--brand-soft); flex-shrink: 0;
+    box-shadow: 0 0 0 2px #fff;
+  }
+  .staff-card.is-done .staff-card__avatar { box-shadow: 0 0 0 2px #FFE0E3; }
+  .staff-card__avatar--ph { display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: var(--brand); }
+  .staff-card__name {
+    font-size: 12px; font-weight: 500; line-height: 1.25; text-align: center;
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .staff-card__title {
+    font-size: 10px; font-weight: 400; line-height: 1.2; color: var(--text-sec);
+    text-align: center; max-width: 100%;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .staff-card__title--pick {
+    font-size: 11px; font-weight: 600; color: var(--brand);
+    letter-spacing: .01em;
+    animation: staffMetaIn .36s cubic-bezier(.22,.82,.24,1);
+  }
+  @keyframes staffMetaIn {
+    0% { opacity: 0; transform: translateY(4px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .staff-card__check {
+    position: absolute; top: 6px; left: 6px;
+    width: 16px; height: 16px; border-radius: 8px;
+    background: var(--brand); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none;
+    animation: staffCheckIn .38s cubic-bezier(.22,.82,.24,1);
+  }
+  @keyframes staffCheckIn {
+    0% { transform: scale(.4); opacity: 0; }
+    70% { transform: scale(1.12); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .staff-card__check svg { width: 10px; height: 10px; display: block; }
+  .staff-card__clear {
+    position: absolute; top: -6px; right: -6px; z-index: 2;
+    width: 22px; height: 22px; border-radius: 11px;
+    border: 1px solid #E8E8E8; background: #fff; color: #929292;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; padding: 0; font-family: inherit;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .staff-card__clear:active { transform: scale(.92); }
+  .staff-card__clear svg { width: 12px; height: 12px; display: block; }
+  .staff-card.is-editing .staff-card__clear { display: none; }
+
+  /* ===== toast ===== */
+  #toast {
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    background:rgba(0,0,0,.75); color:#fff; font-size:14px;
+    padding:12px 22px; border-radius:10px; z-index:999;
+    white-space:nowrap; max-width:340px; text-align:center;
+    display:none;
+    animation:toastIn .18s ease;
+  }
+  @keyframes toastIn {
+    from { opacity:0; }
+    to { opacity:1; }
+  }
+</style>
+</head>
+<body>
+<div id="frame">
+  <!-- ============ 页面1 散客开单 ============ -->
+  <div class="screen active" id="s1" data-name="散客开单">
+    <div class="status-bar">
+      <div class="time">9:41</div>
+      <div class="icons">
+        <img src="assets/ic_cellular.svg" height="13">
+        <img src="assets/ic_wifi.svg" height="13">
+        <img src="assets/ic_battery.svg" height="13">
+      </div>
+    </div>
+    <div class="nav-bar">
+      <button class="btn-back" onclick="toast('已是第一页')"><img src="assets/ic_back.svg"></button>
+      <div class="title">开单结账</div>
+      <div class="date">2026.04.27</div>
+      <div class="ic-right"><img src="assets/ic_nav_right.svg"></div>
+    </div>
+
+    <div class="scroll">
+      <div class="page" style="height:887px;">
+      <div class="guest-card" data-g="male">
+        <div class="avatars">
+          <img src="assets/avatar_male2.png">
+          <img src="assets/avatar_card_female.png">
+        </div>
+        <div class="nm">男散客</div>
+        <button class="btn" onclick="go('s4')">选择顾客</button>
+      </div>
+
+      <div class="panel" style="top:124px; height:837px;"></div>
+
+      <div class="tab" style="top:136px;">
+        <div class="item proj on" onclick="switchTab(this)">项目</div>
+        <div class="item prod" onclick="switchTab(this)">产品</div>
+        <div class="ind"></div>
+      </div>
+      <div class="search" style="top:175px;">
+        <img class="ic" src="assets/ic_search.svg">
+        <span class="ph">搜索项目名称或价格</span>
+        <div class="go"></div>
+        <button class="go-btn">搜索</button>
+      </div>
+
+      <button class="quick-row" style="top:229px;" onclick="setCust('guest'); go('s2')">
+        <img class="ic" src="assets/ic_lightning.svg">
+        <span class="label">快速消费</span>
+        <span class="arrow"><img src="assets/ic_arrow_down.svg"></span>
+      </button>
+
+      <div class="side-nav" style="top:283px;" data-cat="proj">
+        <div class="it on tl" data-group="洗吹">洗吹<span class="num" style="display:none"></span></div>
+        <div class="it" data-group="洗剪吹">洗剪吹<span class="num" style="display:none"></span></div>
+        <div class="it tr" data-group="剪发">剪发<span class="num" style="display:none"></span></div>
+        <div class="it" data-group="造型">造型<span class="num" style="display:none"></span></div>
+        <div class="it" data-group="干洗">干洗<span class="num" style="display:none"></span></div>
+        <div class="it" data-group="接发">接发<span class="num" style="display:none"></span></div>
+        <div class="it" data-group="烫染发">烫染发<span class="num" style="display:none"></span></div>
+        <div class="it" data-group="护理">护理<span class="num" style="display:none"></span></div>
+        <div class="it" data-group="其他">其他<span class="num" style="display:none"></span></div>
+      </div>
+
+      <div class="cat-title" style="top:283px;" data-cat="proj">洗吹</div>
+      <div class="proj-card" style="top:323px;" data-cat="proj" data-group="洗吹">
+        <div class="thumb"><img src="assets/thumb_1.png"></div>
+        <div class="nm" style="top:3px;">高级设计师洗吹+造型</div>
+        <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">58</span><span class="dec">.9</span></div>
+        <button class="add" style="left:268px; top:72px;" onclick="addCart(this)"><img src="assets/ic_add_cart.svg"></button>
+      </div>
+
+      <div class="cat-title" style="top:436px;" data-cat="proj">洗剪吹</div>
+      <div class="proj-card" style="top:476px;" data-cat="proj" data-group="洗剪吹">
+        <div class="thumb"><img src="assets/thumb_2.png"></div>
+        <div class="nm" style="top:0; width:191px; line-height:22px;">资深设计师|精剪+洗吹造型(不满意免单）</div>
+        <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">98</span></div>
+        <button class="add" style="left:268px; top:72px;" onclick="addCart(this)"><img src="assets/ic_add_cart.svg"></button>
+      </div>
+
+      <div class="proj-card" style="top:589px;" data-cat="proj" data-group="洗剪吹">
+        <div class="thumb"><img src="assets/thumb_3.png"></div>
+        <div class="nm" style="top:2px;">首席设计师洗剪吹一口价</div>
+        <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">138</span></div>
+        <button class="add" style="left:268px; top:72px;" onclick="addCart(this)"><img src="assets/ic_add_cart.svg"></button>
+      </div>
+
+      <div class="proj-card" style="top:702px;" data-cat="proj" data-group="洗剪吹">
+        <div class="thumb"><img src="assets/thumb_4.png"></div>
+        <div class="nm" style="top:2px;">资深设计师 | 人气洗剪造型</div>
+        <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">216.</span><span class="dec">09</span></div>
+        <button class="add" style="left:268px; top:72px;" onclick="addCart(this)"><img src="assets/ic_add_cart.svg"></button>
+      </div>
+
+      <div class="cat-title lg" style="top:813px;" data-cat="proj">剪发</div>
+
+      <!-- 产品 tab -->
+      <div class="side-nav" style="top:283px;" data-cat="prod" hidden>
+        <div class="it on tl" data-group="洗护">洗护<span class="num" style="display:none"></span></div>
+        <div class="it" data-group="染烫">染烫<span class="num" style="display:none"></span></div>
+        <div class="it tr" data-group="其他">其他<span class="num" style="display:none"></span></div>
+      </div>
+      <div class="cat-title" style="top:283px;" data-cat="prod" hidden>洗护</div>
+      <div class="proj-card" style="top:323px;" data-cat="prod" data-group="洗护" hidden>
+        <div class="thumb"><img src="assets/thumb_1b.png"></div>
+        <div class="nm" style="top:3px;">卡诗黑钻钥源洗发水</div>
+        <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">268</span></div>
+        <button class="add" style="left:268px; top:72px;" onclick="addCart(this)"><img src="assets/ic_add_cart.svg"></button>
+      </div>
+
+      <div class="cat-title" style="top:436px;" data-cat="prod" hidden>染烫</div>
+      <div class="proj-card" style="top:476px;" data-cat="prod" data-group="染烫" hidden>
+        <div class="thumb"><img src="assets/thumb_2b.png"></div>
+        <div class="nm" style="top:3px;">欧莱雅臻萃染发膏</div>
+        <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">198</span></div>
+        <button class="add" style="left:268px; top:72px;" onclick="addCart(this)"><img src="assets/ic_add_cart.svg"></button>
+      </div>
+
+      <div class="proj-card" style="top:589px;" data-cat="prod" data-group="洗护" hidden>
+        <div class="thumb"><img src="assets/thumb_3b.png"></div>
+        <div class="nm" style="top:3px;">资生堂fino发膜</div>
+        <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">158</span></div>
+        <button class="add" style="left:268px; top:72px;" onclick="addCart(this)"><img src="assets/ic_add_cart.svg"></button>
+      </div>
+
+      <div class="proj-card" style="top:702px;" data-cat="prod" data-group="洗护" hidden>
+        <div class="thumb"><img src="assets/thumb_4b.png"></div>
+        <div class="nm" style="top:3px;">施华蔻羊绒脂护发素</div>
+        <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">88</span></div>
+        <button class="add" style="left:268px; top:72px;" onclick="addCart(this)"><img src="assets/ic_add_cart.svg"></button>
+      </div>
+      </div>
+    </div>
+
+    <div class="hint-bar">
+      <img src="assets/ic_info.svg">
+      <span>具体金额以结算为准</span>
+    </div>
+    <div class="bottom-bar">
+      <button class="btn-add" onclick="toast('请选择项目')"><img src="assets/ic_add_round.svg"></button>
+      <div class="amount"><span class="lbl">应付 ¥</span><span class="val" id="s1amount">0.00</span></div>
+      <button class="btn-guadan" onclick="toast('已挂单')">挂单</button>
+      <button class="btn-next" onclick="nextStep('s1')">下一步</button>
+    </div>
+  </div>
+
+  <!-- ============ 页面2 快速消费 ============ -->
+    <div class="screen" id="s2" data-name="快速消费">
+      <div class="status-bar">
+        <div class="time">9:41</div>
+        <div class="icons">
+          <img src="assets/ic_cellular.svg" height="13">
+          <img src="assets/ic_wifi.svg" height="13">
+          <img src="assets/ic_battery.svg" height="13">
+        </div>
+      </div>
+      <div class="nav-bar">
+        <button class="btn-back" onclick="go('s1')"><img src="assets/ic_back.svg"></button>
+        <div class="title">开单结账</div>
+        <div class="date">2026.04.27</div>
+        <div class="ic-right"><img src="assets/ic_nav_right.svg"></div>
+      </div>
+
+      <div class="guest-card gcard" data-g="male">
+        <div class="avatars">
+          <img src="assets/avatar_male2.png">
+          <img src="assets/avatar_card_female.png">
+        </div>
+        <div class="nm">男散客</div>
+        <button class="btn" onclick="go('s4')">选择顾客</button>
+      </div>
+      <div class="member-card mcard">
+        <div class="row1">
+          <div class="avatar"><img src="assets/avatar_female3.png"></div>
+          <div class="info">
+            <div class="nm-line">
+              <span class="nm">陈女士</span>
+              <span class="vip">◆VIP</span>
+            </div>
+            <div class="last">上次到店2026-08-15</div>
+          </div>
+          <div class="ops">
+            <button class="btn b1" onclick="toast('办理会员卡')">办卡</button>
+            <button class="btn b2" onclick="go('s4')">更换顾客</button>
+          </div>
+        </div>
+        <div class="cards">
+          <span class="lbl">会员卡</span><span class="num">3</span><span class="unit">张</span>
+        </div>
+        <div class="card-list">
+          <div class="card-box">
+            <div class="card-item">
+              <span class="tag">计次卡</span>
+              <span class="nm">水光三次卡</span>
+              <span class="val">余3次</span>
+            </div>
+            <div class="card-item">
+              <span class="tag">储值卡</span>
+              <span class="nm">九折储值卡</span>
+              <span class="val">余额2049.00元</span>
+            </div>
+            <div class="card-item">
+              <span class="tag">折扣卡</span>
+              <span class="nm">超值折扣卡</span>
+              <span class="val">8.0折</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    <div class="amt-card a1">
+      <div class="lbl">收款金额</div>
+      <div class="money" style="position:absolute; left:12px; top:39px; display:flex; align-items:flex-start;">
+        <span style="font-size:22px; font-weight:500; color:#1a1a1a; margin-top:12px;">¥</span>
+        <span class="ph" id="s2moneyPh" style="font-size:24px; color:#b2b2b2; margin-left:13px; line-height:40px;">请输入金额</span>
+        <span class="val" id="s2moneyVal" style="font-size:40px; display:none; margin-left:3px;"></span>
+      </div>
+    </div>
+
+    <div class="amt-card a2 clickable" id="s2StaffRow" onclick="openQuickStaff()">
+      <div class="row-label" style="top:12px;">员工</div>
+      <div class="opt" style="top:12px;"><span id="s2StaffVal">选填</span><img src="assets/ic_arrow_down.svg"></div>
+    </div>
+
+    <div class="amt-card a3 clickable" id="s2RemarkRow" onclick="openRemarkSheet()">
+      <div class="row-label" style="top:12px;">备注</div>
+      <div class="placeholder" id="s2RemarkVal" style="top:44px;">添加备注（200字以内）</div>
+      <div class="opt" style="top:12px;"><span>选填</span><img src="assets/ic_arrow_down.svg"></div>
+    </div>
+
+    <div class="keypad">
+      <div class="key" style="left:6px; top:6px; width:90px; height:65.5px;" onclick="typeKey('1')">1</div>
+      <div class="key" style="left:102px; top:6px; width:90px; height:65.5px;" onclick="typeKey('2')">2</div>
+      <div class="key" style="left:198px; top:6px; width:90px; height:65.5px;" onclick="typeKey('3')">3</div>
+      <div class="key" style="left:6px; top:77.5px; width:90px; height:65.5px;" onclick="typeKey('4')">4</div>
+      <div class="key" style="left:102px; top:77.5px; width:90px; height:65.5px;" onclick="typeKey('5')">5</div>
+      <div class="key" style="left:198px; top:77.5px; width:90px; height:65.5px;" onclick="typeKey('6')">6</div>
+      <div class="key" style="left:6px; top:149px; width:90px; height:65.5px;" onclick="typeKey('7')">7</div>
+      <div class="key" style="left:102px; top:149px; width:90px; height:65.5px;" onclick="typeKey('8')">8</div>
+      <div class="key" style="left:198px; top:149px; width:90px; height:65.5px;" onclick="typeKey('9')">9</div>
+      <div class="key" style="left:6px; top:220.5px; width:186px; height:65.5px;" onclick="typeKey('0')">0</div>
+      <div class="key" style="left:198px; top:220.5px; width:90px; height:65.5px;" onclick="typeKey('.')">.</div>
+      <div class="key del" style="left:294px; top:6px; width:90px; height:65.5px;" onclick="delKey()">⌫</div>
+      <div class="key-pay" id="s2pay" onclick="goPay()">
+        <span>去收款</span>
+        <span class="sub" id="s2payAmt" style="display:none;">¥0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 页面3 快速消费去收款 ============ -->
+  <div class="screen" id="s3" data-name="快速消费去收款">
+    <div class="status-bar">
+      <div class="time">9:41</div>
+      <div class="icons">
+        <img src="assets/ic_cellular.svg" height="13">
+        <img src="assets/ic_wifi.svg" height="13">
+        <img src="assets/ic_battery.svg" height="13">
+      </div>
+    </div>
+    <div class="nav-bar">
+      <button class="btn-back" onclick="go('s2')"><img src="assets/ic_back.svg"></button>
+      <div class="title">开单结账</div>
+      <div class="date">2026.04.27</div>
+      <div class="ic-right"><img src="assets/ic_nav_right.svg"></div>
+    </div>
+
+    <div class="guest-card gcard" data-g="male">
+      <div class="avatars">
+        <img src="assets/avatar_male2.png">
+        <img src="assets/avatar_card_female.png">
+      </div>
+      <div class="nm">男散客</div>
+      <button class="btn" onclick="go('s4')">选择顾客</button>
+    </div>
+    <div class="member-card mcard">
+      <div class="row1">
+        <div class="avatar"><img src="assets/avatar_female3.png"></div>
+        <div class="info">
+          <div class="nm-line">
+            <span class="nm">陈女士</span>
+            <span class="vip">◆VIP</span>
+          </div>
+          <div class="last">上次到店2026-08-15</div>
+        </div>
+        <div class="ops">
+          <button class="btn b1" onclick="toast('办理会员卡')">办卡</button>
+          <button class="btn b2" onclick="go('s4')">更换顾客</button>
+        </div>
+      </div>
+      <div class="cards">
+        <span class="lbl">会员卡</span><span class="num">3</span><span class="unit">张</span>
+      </div>
+      <div class="card-list">
+        <div class="card-box">
+          <div class="card-item">
+            <span class="tag">计次卡</span>
+            <span class="nm">水光三次卡</span>
+            <span class="val">余3次</span>
+          </div>
+          <div class="card-item">
+            <span class="tag">储值卡</span>
+            <span class="nm">九折储值卡</span>
+            <span class="val">余额2049.00元</span>
+          </div>
+          <div class="card-item">
+            <span class="tag">折扣卡</span>
+            <span class="nm">超值折扣卡</span>
+            <span class="val">8.0折</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="amt-card a1">
+      <div class="lbl">收款金额</div>
+        <div style="position:absolute; left:12px; top:39px; display:flex; align-items:flex-start;">
+          <span style="font-size:22px; font-weight:500; color:#1a1a1a; margin-top:12px;">¥</span>
+          <span class="val" id="s3money" style="font-size:40px; color:#1a1a1a; margin-left:1px; line-height:50px;">299</span>
+        </div>
+    </div>
+
+    <div class="amt-card a2 clickable" id="s3StaffRow" onclick="openQuickStaff()">
+      <div class="row-label" style="top:12px;">员工</div>
+      <div class="opt" style="top:12px;"><span id="s3StaffVal">选填</span><img src="assets/ic_arrow_down.svg"></div>
+    </div>
+
+    <div class="amt-card a3 clickable" id="s3RemarkRow" onclick="openRemarkSheet()">
+      <div class="row-label" style="top:12px;">备注</div>
+      <div class="placeholder" id="s3RemarkVal" style="top:44px;">添加备注（200字以内）</div>
+      <div class="opt" style="top:12px;"><span>选填</span><img src="assets/ic_arrow_down.svg"></div>
+    </div>
+
+    <div class="keypad">
+      <div class="key" style="left:6px; top:6px; width:90px; height:65.5px;" onclick="typeKey3('1')">1</div>
+      <div class="key" style="left:102px; top:6px; width:90px; height:65.5px;" onclick="typeKey3('2')">2</div>
+      <div class="key" style="left:198px; top:6px; width:90px; height:65.5px;" onclick="typeKey3('3')">3</div>
+      <div class="key" style="left:6px; top:77.5px; width:90px; height:65.5px;" onclick="typeKey3('4')">4</div>
+      <div class="key" style="left:102px; top:77.5px; width:90px; height:65.5px;" onclick="typeKey3('5')">5</div>
+      <div class="key" style="left:198px; top:77.5px; width:90px; height:65.5px;" onclick="typeKey3('6')">6</div>
+      <div class="key" style="left:6px; top:149px; width:90px; height:65.5px;" onclick="typeKey3('7')">7</div>
+      <div class="key" style="left:102px; top:149px; width:90px; height:65.5px;" onclick="typeKey3('8')">8</div>
+      <div class="key" style="left:198px; top:149px; width:90px; height:65.5px;" onclick="typeKey3('9')">9</div>
+      <div class="key" style="left:6px; top:220.5px; width:186px; height:65.5px;" onclick="typeKey3('0')">0</div>
+      <div class="key" style="left:198px; top:220.5px; width:90px; height:65.5px;" onclick="typeKey3('.')">.</div>
+      <div class="key del" style="left:294px; top:6px; width:90px; height:65.5px;" onclick="delKey3()">⌫</div>
+      <div class="key-pay on" onclick="toast('进入收款结算')">
+        <span>去收款</span>
+        <span class="sub" id="s3payAmt">¥299</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 页面4 选择顾客 ============ -->
+  <div class="screen" id="s4" data-name="选择顾客">
+    <div class="status-bar">
+      <div class="time">9:41</div>
+      <div class="icons">
+        <img src="assets/ic_cellular.svg" height="13">
+        <img src="assets/ic_wifi.svg" height="13">
+        <img src="assets/ic_battery.svg" height="13">
+      </div>
+    </div>
+    <div class="pick-search">
+      <div class="box"><span>输入顾客姓名/手机号/编号/备注</span><img src="assets/ic_search.svg"></div>
+      <button class="cancel" onclick="goBack()">取消</button>
+    </div>
+    <div class="pick-list">
+      <div class="pick-group-h">散客</div>
+      <div class="pick-row" onclick="pickGuest('male')">
+        <div class="avatar"><img src="assets/avatar_male2.png"></div>
+        <div class="info">
+          <div class="line1">
+            <span class="nm">男散客</span>
+            <span class="phone">散客</span>
+          </div>
+          <div class="sub">散客消费，无会员权益</div>
+        </div>
+      </div>
+      <div class="pick-row" onclick="pickGuest('female')">
+        <div class="avatar"><img src="assets/avatar_card_female.png"></div>
+        <div class="info">
+          <div class="line1">
+            <span class="nm">女散客</span>
+            <span class="phone">散客</span>
+          </div>
+          <div class="sub">散客消费，无会员权益</div>
+        </div>
+      </div>
+      <div class="pick-group-h">C</div>
+      <div class="pick-row" onclick="pickChen()">
+        <div class="avatar"><img src="assets/avatar_female2.png"></div>
+        <div class="info">
+          <div class="line1">
+            <span class="nm">陈女士</span>
+            <span class="vip grad"><b>VIP</b></span>
+            <span class="cnt">(3)</span>
+            <span class="phone">19900000255</span>
+          </div>
+          <div class="sub">最近消费：2026.8.15 水光三次卡【¥300.00】</div>
+        </div>
+      </div>
+      <div class="pick-row" onclick="toast('选择陈昕然')">
+        <div class="avatar"><img src="assets/avatar_male2.png"></div>
+        <div class="info">
+          <div class="line1">
+            <span class="nm">陈昕然</span>
+            <span class="phone">19900000256</span>
+          </div>
+          <div class="sub">最近消费：未消费</div>
+        </div>
+      </div>
+      <div class="pick-group-h">G</div>
+      <div class="pick-row" onclick="toast('选择高海泉')">
+        <div class="avatar"><img src="assets/avatar_male2.png"></div>
+        <div class="info">
+          <div class="line1">
+            <span class="nm">高海泉</span>
+            <span class="phone">13800001122</span>
+          </div>
+          <div class="sub">最近消费：未消费</div>
+        </div>
+      </div>
+      <div class="pick-group-h">L</div>
+      <div class="pick-row" onclick="toast('选择李女士')">
+        <div class="avatar"><img src="assets/avatar_female2.png"></div>
+        <div class="info">
+          <div class="line1">
+            <span class="nm">李女士</span>
+            <span class="vip grad"><b>VIP</b></span>
+            <span class="cnt">(2)</span>
+            <span class="phone">18600003344</span>
+          </div>
+          <div class="sub">最近消费：2026.8.10 御方九物【¥198.00】</div>
+        </div>
+      </div>
+      <div class="pick-group-h">M</div>
+      <div class="pick-row" onclick="toast('选择马婷')">
+        <div class="avatar"><img src="assets/avatar_female2.png"></div>
+        <div class="info">
+          <div class="line1">
+            <span class="nm">马婷</span>
+            <span class="phone">13600006677</span>
+          </div>
+          <div class="sub">最近消费：未消费</div>
+        </div>
+      </div>
+    </div>
+    <div class="index-bar">
+      <span>A</span><span>B</span><span>C</span><span>D</span><span>E</span><span>F</span><span>G</span><span>H</span><span>I</span><span>J</span><span>K</span><span>L</span><span>M</span><span>N</span><span>O</span><span>P</span><span>Q</span><span>R</span><span>S</span><span>T</span><span>U</span><span>V</span><span>W</span><span>X</span><span>Y</span><span>Z</span><span>#</span>
+    </div>
+  </div>
+
+  <!-- ============ 页面5 会员开单 ============ -->
+  <div class="screen" id="s5" data-name="会员开单">
+    <div class="status-bar">
+      <div class="time">9:41</div>
+      <div class="icons">
+        <img src="assets/ic_cellular.svg" height="13">
+        <img src="assets/ic_wifi.svg" height="13">
+        <img src="assets/ic_battery.svg" height="13">
+      </div>
+    </div>
+    <div class="nav-bar">
+      <button class="btn-back" onclick="go('s1')"><img src="assets/ic_back.svg"></button>
+      <div class="title">开单结账</div>
+      <div class="date">2026.04.27</div>
+      <div class="ic-right"><img src="assets/ic_nav_right.svg"></div>
+    </div>
+
+    <div class="scroll">
+      <div class="page" style="height:887px;">
+      <div class="member-card">
+        <div class="row1">
+          <div class="avatar"><img src="assets/avatar_female3.png"></div>
+          <div class="info">
+            <div class="nm-line">
+              <span class="nm">陈女士</span>
+              <span class="vip">◆VIP</span>
+            </div>
+            <div class="last">上次到店2026-08-15</div>
+          </div>
+          <div class="ops">
+            <button class="btn b1" onclick="toast('办理会员卡')">办卡</button>
+            <button class="btn b2" onclick="go('s4')">更换顾客</button>
+          </div>
+        </div>
+        <div class="cards">
+          <span class="lbl">会员卡</span><span class="num">3</span><span class="unit">张</span>
+        </div>
+        <div class="card-list">
+          <div class="card-box">
+            <div class="card-item">
+              <span class="tag">计次卡</span>
+              <span class="nm">水光三次卡</span>
+              <span class="val">余3次</span>
+            </div>
+            <div class="card-item">
+              <span class="tag">储值卡</span>
+              <span class="nm">九折储值卡</span>
+              <span class="val">余额2049.00元</span>
+            </div>
+            <div class="card-item">
+              <span class="tag">折扣卡</span>
+              <span class="nm">超值折扣卡</span>
+              <span class="val">8.0折</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="top:221px; height:837px;"></div>
+
+      <div class="tab" style="top:233px;">
+        <div class="item proj on" onclick="switchTab(this)">项目</div>
+        <div class="item prod" onclick="switchTab(this)">产品</div>
+        <div class="ind"></div>
+      </div>
+      <div class="search" style="top:272px;">
+        <img class="ic" src="assets/ic_search.svg">
+        <span class="ph">搜索项目名称或价格</span>
+        <div class="go"></div>
+        <button class="go-btn">搜索</button>
+      </div>
+
+      <button class="quick-row" style="top:326px;" onclick="setCust('member'); go('s2')">
+        <img class="ic" src="assets/ic_lightning.svg">
+        <span class="label">快速消费</span>
+        <span class="arrow"><img src="assets/ic_arrow_down.svg"></span>
+      </button>
+
+      <div class="side-nav" style="top:380px;" data-cat="proj">
+        <div class="it on tl" data-group="洗吹">洗吹<span class="num" style="display:none"></span></div>
+        <div class="it" data-group="洗剪吹">洗剪吹<span class="num" style="display:none"></span></div>
+        <div class="it tr" data-group="剪发">剪发<span class="num" style="display:none"></span></div>
+        <div class="it" data-group="造型">造型<span class="num" style="display:none"></span></div>
+        <div class="it" data-group="干洗">干洗<span class="num" style="display:none"></span></div>
+        <div class="it" data-group="接发">接发<span class="num" style="display:none"></span></div>
+        <div class="it" data-group="烫染发">烫染发<span class="num" style="display:none"></span></div>
+        <div class="it" data-group="护理">护理<span class="num" style="display:none"></span></div>
+        <div class="it" data-group="其他">其他<span class="num" style="display:none"></span></div>
+      </div>
+
+      <div class="cat-title" style="top:380px;" data-cat="proj">洗吹</div>
+      <div class="proj-card" style="top:420px;" data-cat="proj" data-group="洗吹">
+        <div class="thumb"><img src="assets/thumb_1b.png"></div>
+        <div class="nm" style="top:3px;">高级设计师洗吹+造型</div>
+        <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">58</span><span class="dec">.9</span></div>
+        <button class="add" style="left:268px; top:72px;" onclick="addCartM(this)"><img src="assets/ic_add_cart.svg"></button>
+      </div>
+
+      <div class="cat-title" style="top:533px;" data-cat="proj">洗剪吹</div>
+      <div class="proj-card" style="top:573px;" data-cat="proj" data-group="洗剪吹">
+        <div class="thumb"><img src="assets/thumb_2b.png"></div>
+        <div class="nm" style="top:0; width:191px; line-height:22px;">资深设计师|精剪+洗吹造型(不满意免单）</div>
+        <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">98</span></div>
+        <button class="add" style="left:268px; top:72px;" onclick="addCartM(this)"><img src="assets/ic_add_cart.svg"></button>
+      </div>
+
+      <div class="proj-card" style="top:686px;" data-cat="proj" data-group="洗剪吹">
+        <div class="thumb"><img src="assets/thumb_3b.png"></div>
+        <div class="nm" style="top:2px;">首席设计师洗剪吹一口价</div>
+        <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">138</span></div>
+        <button class="add" style="left:268px; top:72px;" onclick="addCartM(this)"><img src="assets/ic_add_cart.svg"></button>
+      </div>
+
+      <div class="proj-card" style="top:799px;" data-cat="proj" data-group="洗剪吹">
+        <div class="thumb"><img src="assets/thumb_4b.png"></div>
+        <div class="nm" style="top:2px;">资深设计师 | 人气洗剪造型</div>
+        <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">216.</span><span class="dec">09</span></div>
+        <button class="add" style="left:268px; top:72px;" onclick="addCartM(this)"><img src="assets/ic_add_cart.svg"></button>
+      </div>
+
+      <div class="cat-title lg" style="top:910px;" data-cat="proj">剪发</div>
+
+      <!-- 产品 tab -->
+      <div class="side-nav" style="top:380px;" data-cat="prod" hidden>
+        <div class="it on tl" data-group="洗护">洗护<span class="num" style="display:none"></span></div>
+        <div class="it" data-group="染烫">染烫<span class="num" style="display:none"></span></div>
+        <div class="it tr" data-group="其他">其他<span class="num" style="display:none"></span></div>
+      </div>
+      <div class="cat-title" style="top:380px;" data-cat="prod" hidden>洗护</div>
+      <div class="proj-card" style="top:420px;" data-cat="prod" data-group="洗护" hidden>
+        <div class="thumb"><img src="assets/thumb_1.png"></div>
+        <div class="nm" style="top:3px;">卡诗黑钻钥源洗发水</div>
+        <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">268</span></div>
+        <button class="add" style="left:268px; top:72px;" onclick="addCartM(this)"><img src="assets/ic_add_cart.svg"></button>
+      </div>
+
+      <div class="cat-title" style="top:533px;" data-cat="prod" hidden>染烫</div>
+      <div class="proj-card" style="top:573px;" data-cat="prod" data-group="染烫" hidden>
+        <div class="thumb"><img src="assets/thumb_2.png"></div>
+        <div class="nm" style="top:3px;">欧莱雅臻萃染发膏</div>
+        <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">198</span></div>
+        <button class="add" style="left:268px; top:72px;" onclick="addCartM(this)"><img src="assets/ic_add_cart.svg"></button>
+      </div>
+
+      <div class="proj-card" style="top:686px;" data-cat="prod" data-group="洗护" hidden>
+        <div class="thumb"><img src="assets/thumb_3.png"></div>
+        <div class="nm" style="top:3px;">资生堂fino发膜</div>
+        <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">158</span></div>
+        <button class="add" style="left:268px; top:72px;" onclick="addCartM(this)"><img src="assets/ic_add_cart.svg"></button>
+      </div>
+
+      <div class="proj-card" style="top:799px;" data-cat="prod" data-group="洗护" hidden>
+        <div class="thumb"><img src="assets/thumb_4.png"></div>
+        <div class="nm" style="top:3px;">施华蔻羊绒脂护发素</div>
+        <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">88</span></div>
+        <button class="add" style="left:268px; top:72px;" onclick="addCartM(this)"><img src="assets/ic_add_cart.svg"></button>
+      </div>
+      </div>
+    </div>
+
+    <div class="hint-bar">
+      <img src="assets/ic_info.svg">
+      <span>具体金额以结算为准</span>
+    </div>
+    <div class="bottom-bar">
+      <button class="btn-add" onclick="toast('选择项目或快速消费')"><img src="assets/ic_add_round.svg"></button>
+      <div class="amount"><span class="lbl">应付 ¥</span><span class="val" id="s5amount">0.00</span></div>
+      <button class="btn-guadan" onclick="toast('已挂单')">挂单</button>
+      <button class="btn-next" onclick="nextStep('s5')">下一步</button>
+    </div>
+  </div>
+
+  <div class="addsheet-mask" id="addSheetMask">
+    <div class="addsheet">
+      <div class="addsheet__grab"></div>
+      <div class="addsheet__head">
+        <div class="addsheet__title" id="asTitle">高级设计师洗吹+造型</div>
+        <div class="addsheet__price" id="asPrice">¥58.9</div>
+      </div>
+      <div class="addsheet__body">
+        <div class="addsheet-grid">
+          <div class="addsheet-cell">
+            <div class="lbl">数量</div>
+            <div class="stepper">
+              <button type="button" class="st-btn" onclick="asStep(-1)">−</button>
+              <div class="st-val" id="asQty">1</div>
+              <button type="button" class="st-btn" onclick="asStep(1)">+</button>
+            </div>
+          </div>
+          <div class="addsheet-cell">
+            <div class="lbl">应收（元）</div>
+            <input class="num" id="asReceivable" type="number" inputmode="decimal" value="58.9" oninput="asRecalc()">
+          </div>
+          <div class="addsheet-cell" style="cursor:pointer" onclick="openRulerSheet()">
+            <div class="lbl">折扣</div>
+            <div class="row">
+              <span class="cur" id="asDiscount">原价</span>
+              <span class="chev"><img src="assets/ic_arrow_down.svg"></span>
+            </div>
+          </div>
+          <div class="addsheet-cell">
+            <div class="lbl">实收（元）</div>
+            <input class="num act" id="asActual" type="number" inputmode="decimal" value="58.9" oninput="asRecalc()">
+          </div>
+        </div>
+        <div class="addsheet-staff" id="asStaffRow" onclick="openStaffSheet()">
+          <span class="lbl" id="asStaffLabel">服务员工</span>
+          <div class="as-staff-list" id="asStaffList">
+            <span class="as-staff-item placeholder">请选择</span>
+          </div>
+          <span class="chev"><img src="assets/ic_arrow_down.svg"></span>
+        </div>
+      </div>
+      <div class="addsheet__foot">
+        <button type="button" class="btn-confirm" onclick="confirmAddSheet()">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ruler-sheet-mask" id="rulerSheetMask">
+    <div class="ruler-sheet">
+      <div class="ruler-sheet__head">
+        <div class="ruler-sheet__title">设置折扣</div>
+        <div class="ruler-sheet__val" id="rulerSheetVal">原价</div>
+      </div>
+      <div class="mp-ruler-wrap">
+        <div class="discount-ruler ruler--pill" id="rulerBox"></div>
+      </div>
+      <div class="addsheet__foot" style="padding:14px 16px 34px;">
+        <button type="button" class="btn-confirm" onclick="confirmRuler()">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="picker-mask picker-mask--bottom" id="staffSheetMask">
+    <div class="picker-sheet tall" role="dialog" aria-label="选择员工">
+      <div class="picker-head">选择员工</div>
+      <div class="add-card-staff-sheet__body" id="staffSheetRoot"></div>
+      <div class="picker-foot">
+        <button type="button" class="btn-main" id="btnStaffDone" onclick="confirmStaff()">完成</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="picker-mask picker-mask--bottom" id="remarkSheetMask">
+    <div class="picker-sheet" role="dialog" aria-label="备注">
+      <div class="picker-head">备注</div>
+      <div class="remark-sheet__body">
+        <textarea id="remarkInput" maxlength="200" placeholder="请输入备注（200字以内）"></textarea>
+        <div class="remark-count" id="remarkCount">0/200</div>
+      </div>
+      <div class="picker-foot">
+        <button type="button" class="btn-main" onclick="confirmRemark()">完成</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+</div>
+
+  <script>
+    var navStack = ['s1'];
+
+    function activate(id) {
+      document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+      document.getElementById(id).classList.add('active');
+    }
+
+    function go(id) {
+      if (navStack[navStack.length - 1] !== id) navStack.push(id);
+      activate(id);
+    }
+
+    function goBack() {
+      if (navStack.length > 1) navStack.pop();
+      activate(navStack[navStack.length - 1]);
+    }
+
+  var toastTimer = null;
+  function toast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    clearTimeout(toastTimer);
+    t.style.display = 'block';
+    void t.offsetWidth; // 重触发动画
+    toastTimer = setTimeout(function(){ t.style.display='none'; }, 1400);
+  }
+
+  // ---- 快速消费/去收款页 顾客身份切换 ----
+  var currentCust = 'guest';
+  function setCust(type) {
+    currentCust = type;
+    var member = (type === 'member');
+    ['s2','s3'].forEach(function(id){
+      var s = document.getElementById(id);
+      s.classList.toggle('cust-member', member);
+      s.classList.toggle('cust-guest', !member);
+    });
+  }
+  function pickChen() {
+    setCust('member');
+    var prev = navStack[navStack.length - 2];
+    if (prev === 's2' || prev === 's3') { goBack(); }
+    else { goBack(); go('s5'); }
+  }
+  // 选择男散客/女散客：切散客身份 + 更新性别头像，返回来源页
+  function setGuestGender(g) {
+    document.querySelectorAll('.guest-card').forEach(function(c){
+      c.setAttribute('data-g', g);
+      var nm = c.querySelector('.nm');
+      if (nm) nm.textContent = (g === 'male' ? '男散客' : '女散客');
+    });
+  }
+  function pickGuest(g) {
+    setGuestGender(g);
+    setCust('guest');
+    var prev = navStack[navStack.length - 2];
+    if (prev === 's5') { go('s1'); }
+    else { goBack(); }
+  }
+  setCust('guest');
+
+  // ---- 快速消费 键盘输入 ----
+  var s2val = '';
+  function renderS2() {
+    var ph = document.getElementById('s2moneyPh');
+    var val = document.getElementById('s2moneyVal');
+    var pay = document.getElementById('s2pay');
+    var payAmt = document.getElementById('s2payAmt');
+    if (s2val) {
+      ph.style.display = 'none';
+      val.style.display = 'inline';
+      val.textContent = s2val;
+      val.style.fontSize = s2val.length > 6 ? '28px' : '40px';
+      pay.classList.add('on');
+      payAmt.style.display = 'inline';
+      payAmt.textContent = '¥' + s2val;
+    } else {
+      ph.style.display = 'inline';
+      val.style.display = 'none';
+      pay.classList.remove('on');
+      payAmt.style.display = 'none';
+    }
+  }
+  function typeKey(k) {
+    if (s2val.length >= 8) return;
+    if (k === '.' && s2val.indexOf('.') >= 0) return;
+    s2val += k;
+    renderS2();
+  }
+  function delKey() { s2val = s2val.slice(0,-1); renderS2(); }
+  function goPay() {
+    if (s2val) { s3val = s2val; renderS3(); }
+    go('s3');
+  }
+
+  // ---- 去收款页 键盘输入 ----
+  var s3val = '299';
+  function renderS3() {
+    document.getElementById('s3money').textContent = s3val;
+    document.getElementById('s3payAmt').textContent = '¥' + s3val;
+  }
+  function typeKey3(k) {
+    if (s3val.length >= 8) return;
+    if (k === '.' && s3val.indexOf('.') >= 0) return;
+    s3val += k;
+    renderS3();
+  }
+  function delKey3() { s3val = s3val.slice(0,-1) || '0'; renderS3(); }
+
+  // ---- 快速消费 员工/备注（s2/s3 共享状态） ----
+  var quickStaffRow = { id: '__quick__', staffIds: [], staffRoles: {}, staffDesignated: {} };
+  var quickRemark = '';
+  var savedAddStaffRow = null;
+  var staffSheetCtx = 'add';   // 'add' 添加弹窗 | 'quick' 快速消费
+
+  function openQuickStaff() {
+    savedAddStaffRow = staffRow;
+    staffRow = quickStaffRow;
+    staffSheetCtx = 'quick';
+    openStaffSheet();
+  }
+
+  function renderQuickStaff() {
+    var names = quickStaffRow.staffIds.map(function(sid) {
+      var st = STAFFS.find(function(s){ return s.id === sid; });
+      return (st ? st.name : sid) + '·' + staffPickSummaryText(sid);
+    });
+    ['s2StaffVal','s3StaffVal'].forEach(function(id) {
+      var el = document.getElementById(id);
+      el.textContent = names.length ? names.join('、') : '选填';
+      el.classList.toggle('val', !!names.length);
+    });
+  }
+
+  function renderQuickRemark() {
+    ['s2RemarkVal','s3RemarkVal'].forEach(function(id) {
+      var el = document.getElementById(id);
+      el.textContent = quickRemark || '添加备注（200字以内）';
+      el.classList.toggle('filled', !!quickRemark);
+    });
+  }
+
+  function openRemarkSheet() {
+    document.getElementById('remarkInput').value = quickRemark;
+    updateRemarkCount();
+    openMask('remarkSheetMask');
+  }
+  function updateRemarkCount() {
+    var v = document.getElementById('remarkInput').value;
+    document.getElementById('remarkCount').textContent = v.length + '/200';
+  }
+  function confirmRemark() {
+    quickRemark = document.getElementById('remarkInput').value.trim();
+    renderQuickRemark();
+    closeMask('remarkSheetMask');
+  }
+  document.getElementById('remarkSheetMask').addEventListener('click', function(e) {
+    if (e.target === this) closeMask('remarkSheetMask');
+  });
+  document.getElementById('remarkInput').addEventListener('input', updateRemarkCount);
+
+  // ---- 会员开单 金额累加 ----
+  var s5total = 0;
+  function addCartM(btn) { openAddSheet(btn, 'member'); }
+  function addCart(btn) { openAddSheet(btn, 'guest'); }
+
+  // ---- 下一步：进入开单结账结算页（原型不搭建结算页，按现有流程 toast 提示） ----
+  function nextStep(screenId) {
+    var amtEl = document.getElementById(screenId === 's5' ? 's5amount' : 's1amount');
+    var amt = parseFloat(amtEl ? amtEl.textContent : '0') || 0;
+    if (amt > 0) {
+      toast('已进入开单结账，请按现有流程完成结算');
+    } else {
+      toast('请先选择项目');
+    }
+  }
+
+  // ===== 添加项目/产品 sheet 弹窗 =====
+  var asData = null;        // {name, price, staffLabel}
+
+  // 购物车分类计数：{ screenId: { group: n } }
+  var cartCount = {};
+  function addCartCount(screenId, group) {
+    if (!group) return;
+    if (!cartCount[screenId]) cartCount[screenId] = {};
+    cartCount[screenId][group] = (cartCount[screenId][group] || 0) + 1;
+    updateSideBadges(screenId);
+  }
+  function updateSideBadges(screenId) {
+    var scr = document.getElementById(screenId);
+    if (!scr) return;
+    var cc = cartCount[screenId] || {};
+    var navs = scr.querySelectorAll('.side-nav');
+    for (var k = 0; k < navs.length; k++) {
+      var nav = navs[k];
+      var its = nav.querySelectorAll('.it');
+      for (var i = 0; i < its.length; i++) {
+        var g = its[i].getAttribute('data-group');
+        var n = cc[g] || 0;
+        var num = its[i].querySelector('.num');
+        if (num) {
+          num.textContent = n > 99 ? '99+' : n;
+          num.style.display = n ? 'flex' : 'none';
+        }
+      }
+    }
+  }
+
+  // 左侧分类点击：切换白底选中态 + 右侧内容滚动到对应分类
+  function selectCat(itEl) {
+    var nav = itEl.parentElement;
+    var its = nav.querySelectorAll('.it');
+    for (var i = 0; i < its.length; i++) its[i].classList.remove('on');
+    itEl.classList.add('on');
+    var g = itEl.getAttribute('data-group');
+    if (!g) return;
+    var screen = nav.closest('.screen');
+    if (!screen) return;
+    var catType = nav.getAttribute('data-cat') || 'proj';
+    var match = null;
+    var titles = screen.querySelectorAll('.cat-title');
+    for (var j = 0; j < titles.length; j++) {
+      var ct = titles[j];
+      if (ct.getAttribute('data-cat') !== catType) continue;
+      var txt = (ct.textContent || '').replace(/\s+/g, '').trim();
+      if (txt === g) { match = ct; break; }
+    }
+    if (!match) return;
+    var scroller = screen.querySelector('.scroll');
+    if (scroller) {
+      var top = match.offsetTop;
+      scroller.scrollTo({ top: top - 2, behavior: 'smooth' });
+    }
+  }
+  document.querySelectorAll('.side-nav').forEach(function(nav) {
+    nav.addEventListener('click', function(e) {
+      var it = e.target.closest('.it');
+      if (it && nav.contains(it)) selectCat(it);
+    });
+  });
+
+  function openAddSheet(btn, kind) {
+    var card = btn.closest('.proj-card');
+    var nameEl = card.querySelector('.nm');
+    var prEl = card.querySelector('.pr');
+    var name = nameEl.textContent.replace(/\s+/g, ' ').trim();
+    var price = prEl.textContent.replace('¥', '').trim();
+    var isProd = card.getAttribute('data-cat') === 'prod';
+    var group = card.getAttribute('data-group');
+    asData = { name: name, price: price, kind: kind, isProd: isProd, group: group };
+    staffRow = { id: '__add__', staffIds: [], staffRoles: {}, staffDesignated: {} };
+    staffCardEdit = null;
+    document.getElementById('asTitle').textContent = name;
+    document.getElementById('asPrice').textContent = '¥' + price;
+    document.getElementById('asQty').textContent = '1';
+    document.getElementById('asReceivable').value = price;
+    document.getElementById('asActual').value = price;
+    document.getElementById('asDiscount').textContent = '原价';
+    document.getElementById('asStaffList').innerHTML = '<span class="as-staff-item placeholder">请选择</span>';
+    document.getElementById('asStaffLabel').textContent = isProd ? '销售人员' : '服务员工';
+    asRulerTick = 20;
+    openMask('addSheetMask');
+  }
+
+  // 遮罩点击关闭
+  document.getElementById('addSheetMask').addEventListener('click', function(e) {
+    if (e.target === this) closeMask('addSheetMask');
+  });
+  document.getElementById('rulerSheetMask').addEventListener('click', function(e) {
+    if (e.target === this) closeMask('rulerSheetMask');
+  });
+  document.getElementById('staffSheetMask').addEventListener('click', function(e) {
+    if (e.target === this) {
+      if (staffSheetCtx === 'quick') {
+        quickStaffRow = staffRow;   // 取消也保留本次选择，与添加弹窗行为一致
+        staffRow = savedAddStaffRow || { id: '__add__', staffIds: [], staffRoles: {}, staffDesignated: {} };
+        staffSheetCtx = 'add';
+      }
+      closeMask('staffSheetMask');
+    }
+  });
+
+  function switchTab(el) {
+    var screen = el.closest('.screen');
+    var isProd = el.classList.contains('prod');
+    var tab = el.parentElement;
+    var items = tab.querySelectorAll('.item');
+    for (var i = 0; i < items.length; i++) {
+      items[i].classList.toggle('on', items[i] === el);
+    }
+    var ind = tab.querySelector('.ind');
+    ind.classList.toggle('prod', isProd);
+    screen.querySelectorAll('[data-cat]').forEach(function(n) {
+      var cat = n.getAttribute('data-cat');
+      if (cat === (isProd ? 'prod' : 'proj')) {
+        n.removeAttribute('hidden');
+        n.style.display = '';
+      } else {
+        n.style.display = 'none';
+      }
+    });
+  }
+
+  function openMask(id) {
+    var m = document.getElementById(id);
+    m.classList.add('show');
+  }
+  function closeMask(id) {
+    var m = document.getElementById(id);
+    m.classList.remove('show');
+  }
+
+  function asStep(d) {
+    var q = parseInt(document.getElementById('asQty').textContent, 10) || 1;
+    q = Math.max(1, Math.min(999, q + d));
+    document.getElementById('asQty').textContent = q;
+    var price = parseFloat(asData.price) || 0;
+    document.getElementById('asReceivable').value = (Math.round(price * q * 100) / 100).toFixed(2);
+    asRecalc();
+  }
+
+  function asRecalc() {
+    var price = parseFloat(asData.price) || 0;
+    var qty = parseInt(document.getElementById('asQty').textContent, 10) || 1;
+    var recv = parseFloat(document.getElementById('asReceivable').value);
+    if (isNaN(recv)) recv = price * qty;
+    var rate = (asRulerTick || 20) / 20;
+    var actual = Math.round(recv * rate * 100) / 100;
+    document.getElementById('asActual').value = actual.toFixed(2);
+    document.getElementById('asDiscount').textContent = asDiscountLabel(asRulerTick);
+  }
+
+  function asDiscountLabel(tick) {
+    if (tick === 0) return '免费';
+    if (tick === 20) return '原价';
+    var v = tick * 0.5;
+    return (Number.isInteger(v) ? String(v) : v.toFixed(1)) + ' 折';
+  }
+
+  // ===== 折扣标尺 =====
+  var asRulerTick = 20;
+  function openRulerSheet() {
+    document.getElementById('rulerSheetVal').textContent = asDiscountLabel(asRulerTick);
+    buildRuler();
+    openMask('rulerSheetMask');
+  }
+  function buildRuler() {
+    var el = document.getElementById('rulerBox');
+    var max = 20;
+    var parts = [];
+    for (var i = 0; i <= max; i++) {
+      var left = (i / max) * 100;
+      var anchor = (i === 0 || i === 10 || i === 20);
+      parts.push('<span class="discount-ruler__tick' + (anchor ? ' is-anchor' : '') + '" style="left:' + left + '%"></span>');
+      if (anchor) {
+        var label = i === 0 ? '免费' : (i === 20 ? '原价' : '5折');
+        parts.push('<span class="discount-ruler__mark" style="left:' + left + '%">' + label + '</span>');
+      }
+    }
+    el.innerHTML =
+      '<div class="discount-ruler__track">' +
+        '<div class="discount-ruler__fill"></div>' +
+        '<span class="discount-ruler__thumb"></span>' +
+      '</div>' +
+      '<div class="discount-ruler__ticks">' + parts.join('') + '</div>';
+    el.dataset.tick = asRulerTick;
+    el.dataset.tickMax = max;
+    wireRuler();
+  }
+  function wireRuler() {
+    var el = document.getElementById('rulerBox');
+    var max = parseInt(el.dataset.tickMax, 10) || 20;
+    var track = el.querySelector('.discount-ruler__track');
+    var thumb = el.querySelector('.discount-ruler__thumb');
+    var fill = el.querySelector('.discount-ruler__fill');
+
+    function setTick(tick, emit) {
+      tick = Math.max(0, Math.min(max, tick | 0));
+      el.dataset.tick = tick;
+      var pct = (tick / max) * 100;
+      thumb.style.left = pct + '%';
+      fill.style.width = pct + '%';
+      document.getElementById('rulerSheetVal').textContent = asDiscountLabel(tick);
+      if (emit) asRulerTick = tick;
+    }
+    function tickFromX(clientX) {
+      var rect = track.getBoundingClientRect();
+      var ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      return Math.round(ratio * max);
+    }
+    var dragging = false;
+    var onMove = function(e) {
+      if (!dragging) return;
+      setTick(tickFromX(e.clientX), true);
+    };
+    var onEnd = function() {
+      if (!dragging) return;
+      dragging = false;
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onEnd);
+    };
+    track.addEventListener('pointerdown', function(e) {
+      e.preventDefault();
+      dragging = true;
+      setTick(tickFromX(e.clientX), true);
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onEnd);
+    });
+    setTick(parseInt(el.dataset.tick, 10) || 0, false);
+  }
+  function confirmRuler() {
+    asRecalc();
+    closeMask('rulerSheetMask');
+  }
+
+  // ===== 员工选择（对齐 card 全套 UI/UX） =====
+  var STAFF_ROLE_OPTS = [
+    { id: 'senior', label: '大工' },
+    { id: 'mid', label: '中工' },
+    { id: 'junior', label: '小工' },
+  ];
+  var STAFF_ROLE_PICK_ORDER = ['junior', 'mid', 'senior'];
+  var STAFF_ROLE_DEFAULT = 'senior';
+
+  var STAFFS = [
+    { id: 'st0', name: '顾清扬', short: '顾', role: '店主', avatar: 'assets/emp-avatars/man-e.jpg' },
+    { id: 'st1', name: '林屿森', short: '森', role: '美容师', avatar: 'assets/emp-avatars/man-a.jpg' },
+    { id: 'st2', name: '何苏叶', short: '叶', role: '店长', avatar: 'assets/emp-avatars/woman-a.jpg' },
+    { id: 'st3', name: '阿Ken', short: 'Ken', role: '美容师', avatar: 'assets/emp-avatars/man-b.jpg' },
+    { id: 'st4', name: 'Lisa', short: 'Lisa', role: '美甲师', avatar: 'assets/emp-avatars/woman-b.jpg' },
+    { id: 'st5', name: '张明', short: '张', role: '美发师', avatar: 'assets/emp-avatars/man-c.jpg' },
+    { id: 'st6', name: '李华', short: '李', role: '美发师', avatar: 'assets/emp-avatars/man-d.jpg' },
+    { id: 'st7', name: '王芳', short: '王', role: '美甲师', avatar: 'assets/emp-avatars/woman-c.jpg' },
+    { id: 'st8', name: '陈强', short: '陈', role: '美发师', avatar: 'assets/emp-avatars/man-e.jpg' },
+    { id: 'st9', name: '赵敏', short: '赵', role: '前台', avatar: 'assets/emp-avatars/woman-d.jpg' },
+    { id: 'st10', name: '周杰', short: '周', role: '美发师', avatar: 'assets/emp-avatars/man-a.jpg' },
+    { id: 'st11', name: '吴婷', short: '吴', role: '美睫师', avatar: 'assets/emp-avatars/woman-e.jpg' },
+    { id: 'st12', name: '小陈', short: '陈', role: '学徒', avatar: 'assets/emp-avatars/man-b.jpg' },
+    { id: 'st13', name: '阿宁', short: '宁', role: '学徒', avatar: 'assets/emp-avatars/woman-b.jpg' },
+  ];
+
+  var staffRow = { id: '__add__', staffIds: [], staffRoles: {}, staffDesignated: {} };
+  var staffCardEdit = null;
+
+  function staffRoleLabel(roleId) {
+    var hit = STAFF_ROLE_OPTS.find(function(r){ return r.id === roleId; });
+    return hit ? hit.label : '';
+  }
+  function ensureStaffState() {
+    if (!Array.isArray(staffRow.staffIds)) staffRow.staffIds = [];
+    if (!staffRow.staffRoles || typeof staffRow.staffRoles !== 'object') staffRow.staffRoles = {};
+    if (!staffRow.staffDesignated || typeof staffRow.staffDesignated !== 'object') staffRow.staffDesignated = {};
+    Object.keys(staffRow.staffRoles).forEach(function(sid) {
+      if (staffRow.staffIds.indexOf(sid) < 0) delete staffRow.staffRoles[sid];
+    });
+    Object.keys(staffRow.staffDesignated).forEach(function(sid) {
+      if (staffRow.staffIds.indexOf(sid) < 0) delete staffRow.staffDesignated[sid];
+    });
+    staffRow.staffIds.forEach(function(sid) {
+      if (!staffRow.staffRoles[sid]) staffRow.staffRoles[sid] = STAFF_ROLE_DEFAULT;
+      if (typeof staffRow.staffDesignated[sid] !== 'boolean') staffRow.staffDesignated[sid] = false;
+    });
+  }
+  function staffCardOrigin(index) {
+    var col = index % 3;
+    if (col === 0) return 'left center';
+    if (col === 2) return 'right center';
+    return 'center center';
+  }
+  function staffPickSummaryText(sid) {
+    var designated = staffRow.staffDesignated && staffRow.staffDesignated[sid] === true;
+    var guest = designated ? '点客' : '散客';
+    var role = staffRoleLabel(staffRow.staffRoles && staffRow.staffRoles[sid] ? staffRow.staffRoles[sid] : '');
+    return role ? guest + '·' + role : guest;
+  }
+  function staffJobTitleHtml(st) {
+    var title = st && st.role ? String(st.role).trim() : '';
+    if (!title) return '';
+    return '<div class="staff-card__title">' + escapeHtml(title) + '</div>';
+  }
+  function staffAvatarHtml(st) {
+    if (st.avatar) {
+      return '<img class="staff-card__avatar" src="' + st.avatar + '" alt="" loading="lazy" referrerpolicy="no-referrer">';
+    }
+    var letter = (st.short || st.name || '?').toString().slice(0, 2);
+    return '<span class="staff-card__avatar staff-card__avatar--ph" aria-hidden="true">' + escapeHtml(letter) + '</span>';
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function renderStaffPickerHtml() {
+    ensureStaffState();
+    var edit = staffCardEdit;
+    var checkSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>';
+    var clearSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+    var cards = STAFFS.map(function(st, index) {
+      var done = staffRow.staffIds.indexOf(st.id) >= 0;
+      var isEdit = !!(edit && edit.staffId === st.id);
+      var dim = !!(edit && !isEdit);
+      var origin = staffCardOrigin(index);
+      var originSide = index % 3 === 0 ? 'left' : index % 3 === 2 ? 'right' : 'center';
+      var body = '';
+      var jobTitle = staffJobTitleHtml(st);
+      if (isEdit && edit.face === 'designate') {
+        body = '<div class="staff-card__split" role="group" aria-label="点客或散客">' +
+          '<button type="button" class="staff-card__split-btn staff-card__split-btn--des" data-staff-opt-designate="1" data-cart-id="' + staffRow.id + '" data-staff-id="' + st.id + '">点客</button>' +
+          '<button type="button" class="staff-card__split-btn staff-card__split-btn--guest" data-staff-opt-designate="0" data-cart-id="' + staffRow.id + '" data-staff-id="' + st.id + '">散客</button>' +
+          '</div>';
+      } else if (isEdit && edit.face === 'role') {
+        var roleBtns = STAFF_ROLE_PICK_ORDER.map(function(rid) {
+          return '<button type="button" class="staff-card__split-btn staff-card__split-btn--role" data-staff-opt-role="' + rid + '" data-cart-id="' + staffRow.id + '" data-staff-id="' + st.id + '">' + escapeHtml(staffRoleLabel(rid)) + '</button>';
+        }).join('');
+        body = '<div class="staff-card__split staff-card__split--3" role="group" aria-label="选择工位">' + roleBtns + '</div>';
+      } else {
+        var pickLine = done
+          ? '<div class="staff-card__title staff-card__title--pick">' + escapeHtml(staffPickSummaryText(st.id)) + '</div>'
+          : jobTitle;
+        body =
+          (done ? '<span class="staff-card__check">' + checkSvg + '</span>' : '') +
+          staffAvatarHtml(st) +
+          '<div class="staff-card__name">' + escapeHtml(st.name) + '</div>' +
+          pickLine;
+      }
+      var clearBtn = (done && !isEdit)
+        ? '<button type="button" class="staff-card__clear" data-staff-clear data-cart-id="' + staffRow.id + '" data-staff-id="' + st.id + '" aria-label="清空选择">' + clearSvg + '</button>'
+        : '';
+      if (isEdit) {
+        return '<div class="staff-card is-editing' + (done ? ' is-done' : '') + '"' +
+          ' style="--staff-origin:' + origin + '"' +
+          ' data-origin="' + originSide + '"' +
+          ' data-staff-card data-cart-id="' + staffRow.id + '" data-staff-id="' + st.id + '">' +
+          '<div class="staff-card__panel" data-face="' + edit.face + '">' + body + '</div>' +
+          '</div>';
+      }
+      return '<div class="staff-card' + (done ? ' is-done' : '') + (dim ? ' is-dim' : '') + '"' +
+        ' style="--staff-origin:' + origin + '"' +
+        ' data-origin="' + originSide + '"' +
+        ' data-staff-card data-cart-id="' + staffRow.id + '" data-staff-id="' + st.id + '">' +
+        clearBtn +
+        '<button type="button" class="staff-card__panel" data-staff-card-hit data-cart-id="' + staffRow.id + '" data-staff-id="' + st.id + '" aria-label="' + escapeHtml(st.name) + '">' +
+        body +
+        '</button>' +
+        '</div>';
+    }).join('');
+    return '<div class="detail-item__staff-block detail-item__staff-block--cards' + (edit ? ' is-picking' : '') + '">' +
+      (edit ? '<button type="button" class="staff-card-scrim" data-staff-scrim aria-label="取消选择"></button>' : '') +
+      '<div class="staff-grid' + (edit ? ' is-morphing' : '') + '">' + cards + '</div>' +
+      '</div>';
+  }
+
+  function animateStaffMorphLayout(grid) {
+    if (!grid) return;
+    var token = (grid._staffMorphToken = (grid._staffMorphToken || 0) + 1);
+    var cards = Array.prototype.slice.call(grid.querySelectorAll(':scope > .staff-card'));
+    var editing = cards.find(function(c){ return c.classList.contains('is-editing'); });
+    var reduce = typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    cards.forEach(function(c) {
+      c.classList.remove('is-pinching', 'is-expanding');
+      c.style.transition = 'none';
+      c.style.transform = '';
+      c.style.width = '';
+      c.style.zIndex = '';
+    });
+    grid.classList.toggle('is-morphing', !!editing);
+
+    if (!editing) {
+      requestAnimationFrame(function() {
+        if (grid._staffMorphToken !== token) return;
+        cards.forEach(function(c) { c.style.transition = ''; });
+      });
+      return;
+    }
+
+    var gap = 8;
+    var narrowW = 32;
+    var gridW = grid.clientWidth;
+    if (gridW <= 0) return;
+    var cellW = (gridW - gap * 2) / 3;
+    var face = editing.querySelector('[data-face]') ? editing.querySelector('[data-face]').getAttribute('data-face') : '';
+    var editWFull = face === 'role' ? gridW : Math.min(gridW, cellW * 2 + gap);
+    var editW = Math.max(cellW, Math.round(editWFull * (2 / 3)));
+    var idx = cards.indexOf(editing);
+    if (idx < 0) return;
+    var col = idx % 3;
+    var rowStart = idx - col;
+    var natural = [0, cellW + gap, 2 * (cellW + gap)];
+    var lefts = [natural[0], natural[1], natural[2]];
+    if (col === 0) {
+      lefts[0] = 0;
+      lefts[1] = editW + gap;
+      lefts[2] = editW + gap * 2 + cellW;
+    } else if (col === 2) {
+      lefts[2] = gridW - editW;
+      lefts[1] = lefts[2] - gap - cellW;
+      lefts[0] = lefts[1] - gap - cellW;
+    } else {
+      lefts[1] = (gridW - editW) / 2;
+      lefts[0] = lefts[1] - gap - cellW;
+      lefts[2] = lefts[1] + editW + gap;
+    }
+    var narrowDx = (cellW - narrowW) / 2;
+
+    var applyFinalLayout = function() {
+      for (var i = 0; i < 3; i++) {
+        var card = cards[rowStart + i];
+        if (!card) continue;
+        var dx = lefts[i] - natural[i];
+        var w = (i === col) ? editW : cellW;
+        card.style.transition = 'transform .17s cubic-bezier(.22,.82,.24,1), width .17s cubic-bezier(.22,.82,.24,1)';
+        card.style.width = w + 'px';
+        card.style.transform = 'translateX(' + dx + 'px)';
+        if (i === col) card.style.zIndex = '6';
+      }
+    };
+
+    if (reduce) {
+      editing.classList.add('is-expanding');
+      applyFinalLayout();
+      return;
+    }
+
+    editing.style.zIndex = '6';
+    editing.classList.add('is-pinching');
+    editing.style.width = cellW + 'px';
+    editing.style.transform = 'translateX(0)';
+    for (var i = 0; i < 3; i++) {
+      if (i === col) continue;
+      var card = cards[rowStart + i];
+      if (!card) continue;
+      card.style.width = cellW + 'px';
+      card.style.transform = 'translateX(0)';
+    }
+    void grid.offsetWidth;
+
+    requestAnimationFrame(function() {
+      if (grid._staffMorphToken !== token) return;
+      editing.style.transition = 'transform .09s cubic-bezier(.4,0,.2,1), width .09s cubic-bezier(.4,0,.2,1)';
+      editing.style.width = narrowW + 'px';
+      editing.style.transform = 'translateX(' + narrowDx + 'px)';
+
+      var phaseDone = false;
+      var runExpand = function() {
+        if (phaseDone || grid._staffMorphToken !== token) return;
+        phaseDone = true;
+        editing.classList.remove('is-pinching');
+        editing.classList.add('is-expanding');
+        applyFinalLayout();
+      };
+      var onShrinkEnd = function(e) {
+        if (e && e.target !== editing) return;
+        if (e && e.propertyName && e.propertyName !== 'width' && e.propertyName !== 'transform') return;
+        editing.removeEventListener('transitionend', onShrinkEnd);
+        runExpand();
+      };
+      editing.addEventListener('transitionend', onShrinkEnd);
+      setTimeout(runExpand, 110);
+    });
+  }
+
+  function afterStaffPickerPaint(root) {
+    requestAnimationFrame(function() {
+      var grid = root && root.querySelector('.staff-grid') ? root.querySelector('.staff-grid') : null;
+      if (grid) animateStaffMorphLayout(grid);
+    });
+  }
+
+  function openStaffSheet() {
+    if (!staffRow.staffIds || !staffRow.staffIds.length) {
+      staffRow = { id: '__add__', staffIds: [], staffRoles: {}, staffDesignated: {} };
+    }
+    staffCardEdit = null;
+    var root = document.getElementById('staffSheetRoot');
+    if (root) {
+      root.innerHTML = renderStaffPickerHtml();
+      afterStaffPickerPaint(root);
+    }
+    openMask('staffSheetMask');
+  }
+
+  // 员工卡片交互（事件委托，对齐 card）
+  document.getElementById('staffSheetRoot').addEventListener('click', function(e) {
+    if (e.target.closest('[data-staff-scrim]')) {
+      staffCardEdit = null;
+      document.getElementById('staffSheetRoot').innerHTML = renderStaffPickerHtml();
+      afterStaffPickerPaint(document.getElementById('staffSheetRoot'));
+      return;
+    }
+    var staffClear = e.target.closest('[data-staff-clear]');
+    if (staffClear) {
+      e.preventDefault(); e.stopPropagation();
+      var cartId = staffClear.getAttribute('data-cart-id');
+      var sid = staffClear.getAttribute('data-staff-id');
+      ensureStaffState();
+      staffRow.staffIds = staffRow.staffIds.filter(function(x){ return x !== sid; });
+      delete staffRow.staffRoles[sid];
+      delete staffRow.staffDesignated[sid];
+      if (staffCardEdit && staffCardEdit.staffId === sid) staffCardEdit = null;
+      document.getElementById('staffSheetRoot').innerHTML = renderStaffPickerHtml();
+      afterStaffPickerPaint(document.getElementById('staffSheetRoot'));
+      return;
+    }
+    var designateOpt = e.target.closest('[data-staff-opt-designate]');
+    if (designateOpt) {
+      e.preventDefault(); e.stopPropagation();
+      var dCart = designateOpt.getAttribute('data-cart-id');
+      var dSid = designateOpt.getAttribute('data-staff-id');
+      if (!staffCardEdit || staffCardEdit.staffId !== dSid) return;
+      staffCardEdit.face = 'role';
+      staffCardEdit.draftDesignated = designateOpt.getAttribute('data-staff-opt-designate') === '1';
+      document.getElementById('staffSheetRoot').innerHTML = renderStaffPickerHtml();
+      afterStaffPickerPaint(document.getElementById('staffSheetRoot'));
+      return;
+    }
+    var roleOpt = e.target.closest('[data-staff-opt-role]');
+    if (roleOpt) {
+      e.preventDefault(); e.stopPropagation();
+      var rSid = roleOpt.getAttribute('data-staff-id');
+      if (!staffCardEdit || staffCardEdit.staffId !== rSid) return;
+      ensureStaffState();
+      if (staffRow.staffIds.indexOf(rSid) < 0) staffRow.staffIds.push(rSid);
+      staffRow.staffDesignated[rSid] = !!staffCardEdit.draftDesignated;
+      staffRow.staffRoles[rSid] = roleOpt.getAttribute('data-staff-opt-role') || STAFF_ROLE_DEFAULT;
+      staffCardEdit = null;
+      document.getElementById('staffSheetRoot').innerHTML = renderStaffPickerHtml();
+      afterStaffPickerPaint(document.getElementById('staffSheetRoot'));
+      return;
+    }
+    var staffHit = e.target.closest('[data-staff-card-hit]');
+    if (staffHit) {
+      e.preventDefault();
+      var hitSid = staffHit.getAttribute('data-staff-id');
+      if (staffCardEdit && staffCardEdit.staffId === hitSid) {
+        staffCardEdit = null;
+        document.getElementById('staffSheetRoot').innerHTML = renderStaffPickerHtml();
+        afterStaffPickerPaint(document.getElementById('staffSheetRoot'));
+        return;
+      }
+      ensureStaffState();
+      staffCardEdit = { staffId: hitSid, face: 'designate', draftDesignated: null };
+      document.getElementById('staffSheetRoot').innerHTML = renderStaffPickerHtml();
+      afterStaffPickerPaint(document.getElementById('staffSheetRoot'));
+    }
+  });
+
+  function confirmStaff() {
+    ensureStaffState();
+    if (staffSheetCtx === 'quick') {
+      quickStaffRow = staffRow;
+      renderQuickStaff();
+      staffRow = savedAddStaffRow || { id: '__add__', staffIds: [], staffRoles: {}, staffDesignated: {} };
+      staffSheetCtx = 'add';
+      staffCardEdit = null;
+      closeMask('staffSheetMask');
+      return;
+    }
+    var list = document.getElementById('asStaffList');
+    var names = staffRow.staffIds.map(function(sid) {
+      var st = STAFFS.find(function(s){ return s.id === sid; });
+      return (st ? st.name : sid) + '·' + staffPickSummaryText(sid);
+    });
+    if (names.length) {
+      list.innerHTML = names.map(function(n){ return '<span class="as-staff-item">' + n + '</span>'; }).join('');
+    } else {
+      list.innerHTML = '<span class="as-staff-item placeholder">请选择</span>';
+    }
+    staffCardEdit = null;
+    closeMask('staffSheetMask');
+  }
+
+  // ===== 确定 =====
+  function confirmAddSheet() {
+    ensureStaffState();
+    var actual = parseFloat(document.getElementById('asActual').value) || 0;
+    var label = asData.name + ' 实收 ¥' + actual.toFixed(2);
+    var staffNames = staffRow.staffIds.map(function(sid) {
+      var st = STAFFS.find(function(s){ return s.id === sid; });
+      return (st ? st.name : sid) + '·' + staffPickSummaryText(sid);
+    });
+    if (staffNames.length) label += ' · ' + staffNames.join('、');
+    if (asData.kind === 'member') {
+      s5total += actual;
+      document.getElementById('s5amount').textContent = s5total.toFixed(2);
+      toast('已加入 · 应付 ¥' + s5total.toFixed(2));
+      addCartCount('s5', asData.group);
+    } else {
+      document.getElementById('s1amount').textContent = (parseFloat(document.getElementById('s1amount').textContent) + actual).toFixed(2);
+      toast('已加入 · 应付 ¥' + document.getElementById('s1amount').textContent);
+      addCartCount('s1', asData.group);
+    }
+    closeMask('addSheetMask');
+  }
+</script>
+</body>
+</html>
