@@ -273,6 +273,8 @@
   .proj-card .pr .sym { font-size:13px; }
   .proj-card .pr .int { font-size:18px; }
   .proj-card .pr .dec { font-size:12px; }
+  .proj-card .pr .old { font-size:12px; color:#b2b2b2; text-decoration:line-through; margin-right:6px; }
+  .proj-card .pr .sale { font-size:16px; font-weight:500; }
   .proj-card .add {
     position:absolute; width:20px; height:20px; border:none; background:none; padding:0; cursor:pointer;
   }
@@ -799,6 +801,8 @@
   .benefit-sheet .benefit-item .ck { width:18px; height:18px; flex:none; display:flex; align-items:center; justify-content:center; }
   .benefit-sheet .benefit-item .ck svg { width:16px; height:16px; color:#f32f41; }
   .benefit-sheet .benefit-item.on { background:#fff8f8; }
+  .benefit-sheet .benefit-item.disabled { cursor:not-allowed; opacity:0.4; }
+  .benefit-sheet .benefit-item.disabled .type { color:#929292; border-color:#d8d8d8; }
 
   /* ===== 快速消费/去收款页 顶部卡片按身份切换 ===== */
   .screen .gcard, .screen .mcard { position:absolute; left:12px; top:107px; z-index:20; }
@@ -1181,7 +1185,7 @@
           <img src="assets/avatar_male2.png" onclick="toggleGuestGender('male')">
           <img src="assets/avatar_card_female.png" onclick="toggleGuestGender('female')">
         </div>
-        <div class="nm">男散客</div>
+        <div class="nm" onclick="go('s4')" style="cursor:pointer;">男散客</div>
         <button class="btn" onclick="go('s4')">选择顾客</button>
       </div>
 
@@ -1310,7 +1314,7 @@
           <img src="assets/avatar_male2.png" onclick="toggleGuestGender('male')">
           <img src="assets/avatar_card_female.png" onclick="toggleGuestGender('female')">
         </div>
-        <div class="nm">男散客</div>
+        <div class="nm" onclick="go('s4')" style="cursor:pointer;">男散客</div>
         <button class="btn" onclick="go('s4')">选择顾客</button>
       </div>
       <div class="member-card mcard">
@@ -1414,7 +1418,7 @@
         <img src="assets/avatar_male2.png" onclick="toggleGuestGender('male')">
         <img src="assets/avatar_card_female.png" onclick="toggleGuestGender('female')">
       </div>
-      <div class="nm">男散客</div>
+      <div class="nm" onclick="go('s4')" style="cursor:pointer;">男散客</div>
       <button class="btn" onclick="go('s4')">选择顾客</button>
     </div>
     <div class="member-card mcard">
@@ -1781,7 +1785,7 @@
             <img src="assets/avatar_male2.png" onclick="toggleGuestGender('male')">
             <img src="assets/avatar_card_female.png" onclick="toggleGuestGender('female')">
           </div>
-          <div class="nm">男散客</div>
+          <div class="nm" onclick="go('s4')" style="cursor:pointer;">男散客</div>
           <button class="btn" onclick="go('s4')">选择顾客</button>
         </div>
         <div class="member-card mcard co-mcard">
@@ -1866,7 +1870,7 @@
             <img src="assets/avatar_male2.png" onclick="toggleGuestGender('male')">
             <img src="assets/avatar_card_female.png" onclick="toggleGuestGender('female')">
           </div>
-          <div class="nm">男散客</div>
+          <div class="nm" onclick="go('s4')" style="cursor:pointer;">男散客</div>
           <button class="btn" onclick="go('s4')">选择顾客</button>
         </div>
         <div class="member-card mcard co-mcard">
@@ -2203,6 +2207,38 @@
 
   // ---- 快速消费/去收款页 顾客身份切换 ----
   var currentCust = 'guest';
+  // 会员持有权益对价目的优惠（演示：陈女士持有「超值折扣卡 8.0折」为全场最优折扣）
+  var MEMBER_BENEFIT_DISCOUNT = 0.8;
+  function salePrice(price) {
+    return Math.round(price * MEMBER_BENEFIT_DISCOUNT * 100) / 100;
+  }
+  function priceHtml(p) {
+    var s = String(p);
+    var parts = s.split('.');
+    var h = '<span class="sym">¥</span><span class="int">' + parts[0] + '</span>';
+    if (parts[1]) h += '<span class="dec">.' + parts[1] + '</span>';
+    return h;
+  }
+  // 价目卡片价格渲染：会员持有折扣权益时显示划线原价 + 红色优惠价
+  function applyPriceTags() {
+    var member = currentCust === 'member';
+    document.querySelectorAll('.proj-card').forEach(function(card) {
+      var pr = card.querySelector('.pr');
+      if (!pr) return;
+      var price = parseFloat(pr.getAttribute('data-price'));
+      if (isNaN(price)) {
+        price = parseFloat(pr.textContent.replace(/[^\d.]/g, ''));
+        if (isNaN(price)) return;
+        pr.setAttribute('data-price', price);
+      }
+      if (member) {
+        var sale = salePrice(price);
+        pr.innerHTML = '<span class="old">¥' + String(price) + '</span><span class="sale">' + priceHtml(sale) + '</span>';
+      } else {
+        pr.innerHTML = priceHtml(price);
+      }
+    });
+  }
   function setCust(type) {
     currentCust = type;
     var member = (type === 'member');
@@ -2212,6 +2248,7 @@
       s.classList.toggle('cust-member', member);
       s.classList.toggle('cust-guest', !member);
     });
+    applyPriceTags();
   }
   function pickChen() {
     setCust('member');
@@ -2483,19 +2520,21 @@
     var nameEl = card.querySelector('.nm');
     var prEl = card.querySelector('.pr');
     var name = nameEl.textContent.replace(/\s+/g, ' ').trim();
-    var price = prEl.textContent.replace('¥', '').trim();
+    var price = parseFloat(prEl.getAttribute('data-price'));
+    if (isNaN(price)) price = parseFloat(prEl.textContent.replace(/[^\d.]/g, ''));
+    var sale = (currentCust === 'member') ? salePrice(price) : price;
     var isProd = card.getAttribute('data-cat') === 'prod';
     var group = card.getAttribute('data-group');
     var thumbEl = card.querySelector('.thumb img');
     var thumb = thumbEl ? thumbEl.getAttribute('src') : '';
-    asData = { name: name, price: price, kind: kind, isProd: isProd, group: group, thumb: thumb };
+    asData = { name: name, price: price, sale: sale, kind: kind, isProd: isProd, group: group, thumb: thumb };
     addStaffRow = { id: '__add__', staffIds: [], staffRoles: {}, staffDesignated: {} };
     staffRow = addStaffRow;
     staffCardEdit = null;
     document.getElementById('asTitle').textContent = name;
-    document.getElementById('asPrice').textContent = '¥' + price;
+    document.getElementById('asPrice').textContent = '¥' + sale;
     document.getElementById('asQty').textContent = '1';
-    document.getElementById('asPayable').value = price;
+    document.getElementById('asPayable').value = sale;
     document.getElementById('asStaffLabel').textContent = isProd ? '销售人员' : '服务员工';
     // 内嵌员工选择：直接渲染到弹窗内
     var gridRoot = document.getElementById('asStaffGrid');
@@ -2545,7 +2584,7 @@
     var q = parseInt(document.getElementById('asQty').textContent, 10) || 1;
     q = Math.max(1, Math.min(999, q + d));
     document.getElementById('asQty').textContent = q;
-    var price = parseFloat(asData.price) || 0;
+    var price = (asData.sale != null) ? asData.sale : (parseFloat(asData.price) || 0);
     document.getElementById('asPayable').value = (Math.round(price * q * 100) / 100).toFixed(2);
   }
 
@@ -2618,7 +2657,7 @@
   }
   function staffPickSummaryText(sid) {
     var designated = staffRow.staffDesignated && staffRow.staffDesignated[sid] === true;
-    var guest = designated ? '点客' : '散客';
+    var guest = designated ? '指定' : '未指定';
     var role = staffRoleLabel(staffRow.staffRoles && staffRow.staffRoles[sid] ? staffRow.staffRoles[sid] : '');
     return role ? guest + '·' + role : guest;
   }
@@ -2652,9 +2691,9 @@
       var body = '';
       var jobTitle = staffJobTitleHtml(st);
       if (isEdit && edit.face === 'designate') {
-        body = '<div class="staff-card__split" role="group" aria-label="点客或散客">' +
-          '<button type="button" class="staff-card__split-btn staff-card__split-btn--des" data-staff-opt-designate="1" data-cart-id="' + staffRow.id + '" data-staff-id="' + st.id + '">点客</button>' +
-          '<button type="button" class="staff-card__split-btn staff-card__split-btn--guest" data-staff-opt-designate="0" data-cart-id="' + staffRow.id + '" data-staff-id="' + st.id + '">散客</button>' +
+        body = '<div class="staff-card__split" role="group" aria-label="指定或未指定">' +
+          '<button type="button" class="staff-card__split-btn staff-card__split-btn--des" data-staff-opt-designate="1" data-cart-id="' + staffRow.id + '" data-staff-id="' + st.id + '">指定</button>' +
+          '<button type="button" class="staff-card__split-btn staff-card__split-btn--guest" data-staff-opt-designate="0" data-cart-id="' + staffRow.id + '" data-staff-id="' + st.id + '">未指定</button>' +
           '</div>';
       } else if (isEdit && edit.face === 'role') {
         var roleBtns = STAFF_ROLE_PICK_ORDER.map(function(rid) {
@@ -2924,7 +2963,8 @@
     var payable = parseFloat(document.getElementById('asPayable').value) || 0;
     var price = parseFloat(asData.price) || 0;
     var qty = parseInt(document.getElementById('asQty').textContent, 10) || 1;
-    var normal = Math.round(price * qty * 100) / 100;
+    // 会员权益价（划线优惠价）作为改价判定基准：默认优惠价不算改价，权益仍可用
+    var normal = Math.round((asData.sale != null ? asData.sale : price) * qty * 100) / 100;
     // 手动改应付即视为改价：结算页 s6 该明细不可用权益
     var discounted = Math.abs(payable - normal) > 0.001;
     var label = asData.name + ' 应付 ¥' + payable.toFixed(2);
@@ -2937,6 +2977,7 @@
     cartItems.push({
       name: asData.name,
       price: price,
+      salePrice: (asData.sale != null) ? asData.sale : price,
       qty: qty,
       payable: payable,
       receivable: payable,   // s6 小计 = 应付
@@ -3011,16 +3052,27 @@
   }
 
   // ---- 权益数据 ----
+  // 快速消费可选权益类型：会员卡储值金额 / 全场项目计次或折扣 / 全场项目或产品通用优惠券 / 满足金额门槛的代金券
+  // qr 规则：discount=按比例折；minus=满 min 减 amount；none=计次核销不抵扣金额
   var BENEFITS = [
-    { type: '会员卡', name: '九折储值卡', val: '余额2049.00元' },
-    { type: '会员卡', name: '水光三次卡', val: '余3次' },
-    { type: '会员卡', name: '超值折扣卡', val: '8.0折' },
-    { type: '优惠券', name: '新人8折券', val: '满58减10' },
-    { type: '优惠券', name: '满200减30券', val: '满200减30' }
+    { type: '会员卡', name: '九折储值卡', val: '余额2049.00元', qr: { kind: 'discount', rate: 0.9 } },
+    { type: '会员卡', name: '水光三次卡', val: '余3次', qr: { kind: 'none' } },
+    { type: '会员卡', name: '超值折扣卡', val: '8.0折', qr: { kind: 'discount', rate: 0.8 } },
+    { type: '优惠券', name: '新人8折券', val: '满58减10', qr: { kind: 'minus', min: 58, amount: 10 } },
+    { type: '优惠券', name: '满200减30券', val: '满200减30', qr: { kind: 'minus', min: 200, amount: 30 } }
   ];
+  // 快速消费应用权益后的应付金额
+  function qcoApplyBenefit(it) {
+    var amt = it.price;
+    var rule = it.benefit && it.benefit._rule;
+    if (!rule) return amt;
+    if (rule.kind === 'discount') return Math.round(amt * rule.rate * 100) / 100;
+    if (rule.kind === 'minus') return Math.max(0, Math.round((amt - rule.amount) * 100) / 100);
+    return amt; // 计次卡：仅核销次数，不抵扣金额
+  }
   function autoBenefit() {
-    // 会员自动填充首张会员卡，散客自动填充首张优惠券
-    return coCust === 'member' ? BENEFITS[0] : BENEFITS[3];
+    // 会员自动匹配其持有的最优全场折扣权益（演示：超值折扣卡 8 折，与价目划线价同源）；散客自动填充首张优惠券
+    return coCust === 'member' ? BENEFITS[2] : BENEFITS[3];
   }
 
   // ---- s6 渲染 ----
@@ -3073,7 +3125,7 @@
         '<span class="role">' + escapeHtml(primaryRole || '大工') + '</span>' +
         '<span class="nm">' + escapeHtml(primaryName) + '</span>' +
         '<button type="button" class="unset' + (designated ? ' on' : '') + '" onclick="event.stopPropagation();toggleCoDesignated(' + i + ')">' +
-          '<span class="dot"></span>' + (designated ? '点客' : '未指定') +
+          '<span class="dot"></span>' + (designated ? '指定' : '未指定') +
         '</button></div>';
       // 员工内嵌面板
       var staffEmbed = '';
@@ -3152,7 +3204,9 @@
     var n = parseFloat(String(val).replace(/[^\d.]/g, ''));
     if (!isFinite(n) || n < 0) n = it.receivable;
     n = Math.round(n * 100) / 100;
-    var changed = Math.abs(n - it.price) > 0.001;
+    // 会员权益价（划线优惠价）作为改价判定基准：默认优惠价不算改价，权益仍可用
+    var base = Math.round((it.salePrice != null ? it.salePrice : it.price) * it.qty * 100) / 100;
+    var changed = Math.abs(n - base) > 0.001;
     it.receivable = n;
     it.actual = n;
     it.discounted = changed;
@@ -3200,13 +3254,23 @@
     renderBenefitList();
     openMask('benefitSheetMask');
   }
+  // 权益门槛判断：快速消费时，代金券/优惠券需金额满足门槛才可选
+  function benefitUsable(b, amt) {
+    var rule = b.qr;
+    if (!rule) return true;
+    if (rule.kind === 'minus' && rule.min > 0 && amt < rule.min) return false;
+    return true;
+  }
   function renderBenefitList() {
     var it = (coEditIdx === -1) ? qcoItem : cartItems[coEditIdx];
+    var isQuick = coEditIdx === -1;
     var el = document.getElementById('benefitList');
     var checkSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>';
     el.innerHTML = BENEFITS.map(function(b, i) {
-      var on = !!(it.benefit && it.benefit.type === b.type && it.benefit.name === b.name);
-      return '<button type="button" class="benefit-item' + (on ? ' on' : '') + '" onclick="pickBenefit(' + i + ')">' +
+      var on = !!(it && it.benefit && it.benefit.type === b.type && it.benefit.name === b.name);
+      var usable = isQuick ? benefitUsable(b, it ? it.price : 0) : true;
+      return '<button type="button" class="benefit-item' + (on ? ' on' : '') + (usable ? '' : ' disabled') + '"' +
+        (usable ? ' onclick="pickBenefit(' + i + ')"' : ' disabled') + '>' +
         '<span class="type">' + escapeHtml(b.type) + '</span>' +
         '<span class="nm">' + escapeHtml(b.name) + '</span>' +
         '<span class="val">' + escapeHtml(b.val) + '</span>' +
@@ -3218,15 +3282,20 @@
     var it = (coEditIdx === -1) ? qcoItem : cartItems[coEditIdx];
     if (!it) return;
     var b = BENEFITS[bi];
+    var isQuick = coEditIdx === -1;
+    if (isQuick && !benefitUsable(b, it.price)) return;
     if (it.benefit && it.benefit.type === b.type && it.benefit.name === b.name) {
       it.benefit = null;
       it._benefitCleared = true;
+      if (isQuick) { it.actual = it.price; it.receivable = it.actual; }
     } else {
-      it.benefit = { type: b.type, name: b.name, val: b.val };
+      it.benefit = { type: b.type, name: b.name, val: b.val, _rule: b.qr };
       it._benefitCleared = false;
+      if (isQuick) { it.actual = qcoApplyBenefit(it); it.receivable = it.actual; }
     }
     renderBenefitList();
     renderCo();
+    if (isQuick) renderQco();
   }
   document.getElementById('benefitSheetMask').addEventListener('click', function(e) {
     if (e.target === this) closeMask('benefitSheetMask');
@@ -3271,8 +3340,9 @@
     } else {
       qcoItem.price = amt;
       if (!qcoItem.discounted) {
-        qcoItem.receivable = pay;
-        qcoItem.actual = pay;
+        // 已选权益时按权益规则重算应付（否则恢复为输入金额）
+        qcoItem.receivable = qcoItem.benefit ? qcoApplyBenefit(qcoItem) : pay;
+        qcoItem.actual = qcoItem.receivable;
       }
       qcoItem.note = quickRemark;
     }
@@ -3334,17 +3404,23 @@
       '<span class="role">' + escapeHtml(primaryRole || '大工') + '</span>' +
       '<span class="nm">' + escapeHtml(primaryName) + '</span>' +
       '<button type="button" class="unset' + (designated ? ' on' : '') + '" onclick="event.stopPropagation();toggleQcoDesignated()">' +
-        '<span class="dot"></span>' + (designated ? '点客' : '未指定') +
+        '<span class="dot"></span>' + (designated ? '指定' : '未指定') +
       '</button></div>';
     var staffEmbed = '';
     if (it._staffOpen) {
       staffEmbed = '<div class="co-staff-embed" data-staff-root data-ctx="qco" data-idx="0">' +
         renderStaffPickerHtmlForRow(it.staff) + '</div>';
     }
-    var benCell = '<div class="co-row" onclick="openQcoBenefit()"><span class="lbl">权益<span class="help">?</span></span>' +
-      '<span class="val' + (it.benefit ? '' : ' gray') + '">' +
-      (it.benefit ? escapeHtml(it.benefit.name) : '无卡权益') +
-      '<span class="co-arr">' + coArrowSvg + '</span></span></div>';
+    var benCell;
+    if (it.discounted) {
+      benCell = '<div class="co-row" onclick="toast(\'改价商品不可用权益\')"><span class="lbl">权益<span class="help">?</span></span>' +
+        '<span class="val gray">改价商品不可用权益</span></div>';
+    } else {
+      benCell = '<div class="co-row" onclick="openQcoBenefit()"><span class="lbl">权益<span class="help">?</span></span>' +
+        '<span class="val' + (it.benefit ? '' : ' gray') + '">' +
+        (it.benefit ? escapeHtml(it.benefit.name) : '无卡权益') +
+        '<span class="co-arr">' + coArrowSvg + '</span></span></div>';
+    }
     var noteCell = '<div class="co-row co-note-row" onclick="openQcoRemark()"><span class="lbl">开单内容</span>' +
       '<span class="val' + (it.note ? '' : ' gray') + '">' +
       (it.note ? escapeHtml(it.note) : '未输入') +
