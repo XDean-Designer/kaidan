@@ -523,7 +523,7 @@
   #s6 .co-item .co-row .val .staff-mini, #s7 .co-item .co-row .val .staff-mini { width:16px; height:16px; border-radius:50%; overflow:hidden; flex:none; color:#929292; display:flex; align-items:center; justify-content:center; }
   #s6 .co-item .co-row .val .staff-mini svg, #s7 .co-item .co-row .val .staff-mini svg { width:14px; height:14px; }
   #s6 .co-item .co-row .val .staff-mini img, #s7 .co-item .co-row .val .staff-mini img { width:16px; height:16px; object-fit:cover; display:block; }
-  /* 员工第二行：角色标签 + 未指定 */
+  /* 员工第二行：角色标签 + 散客 */
   #s6 .co-item .co-emp-detail, #s7 .co-item .co-emp-detail {
     display:flex; align-items:center; gap:8px; min-height:40px; padding:0 16px 4px;
   }
@@ -811,15 +811,16 @@
   .screen.cust-guest .mcard { display:none; }
   .screen.cust-member .gcard { display:none; }
   .screen.cust-member .mcard { display:block; }
-  .amt-card.a1 { top:213px; height:95px; }
-  .amt-card.a2 { top:316px; height:44px; }
-  .amt-card.a3 { top:368px; height:76px; }
+  /* a1=开单内容 a2=收款金额 a3=员工 */
+  .amt-card.a1 { top:213px; height:76px; }
+  .amt-card.a2 { top:297px; height:95px; }
+  .amt-card.a3 { top:400px; height:44px; }
   .screen.cust-member .amt-card.a1 { top:213px; }
-  .screen.cust-member .amt-card.a2 { top:316px; }
-  .screen.cust-member .amt-card.a3 { top:368px; }
+  .screen.cust-member .amt-card.a2 { top:297px; }
+  .screen.cust-member .amt-card.a3 { top:400px; }
   .screen.cust-member.m-exp .amt-card.a1 { top:321px; }
-  .screen.cust-member.m-exp .amt-card.a2 { top:424px; }
-  .screen.cust-member.m-exp .amt-card.a3 { top:476px; }
+  .screen.cust-member.m-exp .amt-card.a2 { top:405px; }
+  .screen.cust-member.m-exp .amt-card.a3 { top:508px; }
 
   /* ===== 通用 ===== */
   /* ===== 添加项目/产品 sheet 弹窗 ===== */
@@ -1356,7 +1357,12 @@
         </div>
       </div>
 
-    <div class="amt-card a1">
+    <div class="amt-card a1" id="s2RemarkRow">
+      <div class="row-label" style="top:12px;">开单内容</div>
+      <input class="quick-note-input" id="s2RemarkInput" type="text" maxlength="50" placeholder="请输入开单内容（50字以内）" oninput="onQuickNote(this.value)">
+    </div>
+
+    <div class="amt-card a2">
       <div class="lbl">收款金额</div>
       <div class="money" style="position:absolute; left:12px; top:39px; display:flex; align-items:flex-start;">
         <span style="font-size:22px; font-weight:500; color:#1a1a1a; margin-top:12px;">¥</span>
@@ -1365,16 +1371,11 @@
       </div>
     </div>
 
-    <div class="amt-card a2 clickable" id="s2StaffRow" onclick="toggleQuickStaff('s2')">
+    <div class="amt-card a3 clickable" id="s2StaffRow" onclick="toggleQuickStaff('s2')">
       <div class="row-label" style="top:12px;">员工</div>
       <div class="opt" style="top:12px;"><span id="s2StaffVal"></span><img class="arr" src="assets/ic_arrow_down.svg"></div>
     </div>
     <div class="quick-staff-panel" id="s2StaffPanel" data-staff-root data-ctx="quick"></div>
-
-    <div class="amt-card a3" id="s2RemarkRow">
-      <div class="row-label" style="top:12px;">开单内容</div>
-      <input class="quick-note-input" id="s2RemarkInput" type="text" maxlength="50" placeholder="请输入开单内容（50字以内）" oninput="onQuickNote(this.value)">
-    </div>
 
     <div class="keypad">
       <div class="key" style="left:6px; top:6px; width:90px; height:65.5px;" onclick="typeKey('1')">1</div>
@@ -1460,7 +1461,12 @@
       </div>
     </div>
 
-    <div class="amt-card a1">
+    <div class="amt-card a1" id="s3RemarkRow">
+      <div class="row-label" style="top:12px;">开单内容</div>
+      <input class="quick-note-input" id="s3RemarkInput" type="text" maxlength="50" placeholder="请输入开单内容（50字以内）" oninput="onQuickNote(this.value)">
+    </div>
+
+    <div class="amt-card a2">
       <div class="lbl">收款金额</div>
         <div style="position:absolute; left:12px; top:39px; display:flex; align-items:flex-start;">
           <span style="font-size:22px; font-weight:500; color:#1a1a1a; margin-top:12px;">¥</span>
@@ -1468,16 +1474,11 @@
         </div>
     </div>
 
-    <div class="amt-card a2 clickable" id="s3StaffRow" onclick="toggleQuickStaff('s3')">
+    <div class="amt-card a3 clickable" id="s3StaffRow" onclick="toggleQuickStaff('s3')">
       <div class="row-label" style="top:12px;">员工</div>
       <div class="opt" style="top:12px;"><span id="s3StaffVal"></span><img class="arr" src="assets/ic_arrow_down.svg"></div>
     </div>
     <div class="quick-staff-panel" id="s3StaffPanel" data-staff-root data-ctx="quick"></div>
-
-    <div class="amt-card a3" id="s3RemarkRow">
-      <div class="row-label" style="top:12px;">开单内容</div>
-      <input class="quick-note-input" id="s3RemarkInput" type="text" maxlength="50" placeholder="请输入开单内容（50字以内）" oninput="onQuickNote(this.value)">
-    </div>
 
     <div class="keypad">
       <div class="key" style="left:6px; top:6px; width:90px; height:65.5px;" onclick="typeKey3('1')">1</div>
@@ -2057,8 +2058,8 @@
           <div class="hd">快速消费</div>
           <div class="table">
             <div class="trow head"><span class="c0"></span><span class="cv">大工</span><span class="cv">中工</span><span class="cv">小工</span></div>
-            <div class="trow"><span class="c0">指定</span><span class="cv">100.00%</span><span class="cv">100.00%</span><span class="cv">100.00%</span></div>
-            <div class="trow"><span class="c0">非指定</span><span class="cv">100.00%</span><span class="cv">100.00%</span><span class="cv">100.00%</span></div>
+            <div class="trow"><span class="c0">点客</span><span class="cv">100.00%</span><span class="cv">100.00%</span><span class="cv">100.00%</span></div>
+            <div class="trow"><span class="c0">散客</span><span class="cv">100.00%</span><span class="cv">100.00%</span><span class="cv">100.00%</span></div>
           </div>
         </div>
       </div>
@@ -2100,8 +2101,8 @@
         <div class="perf-card">
           <div class="hd">快速消费</div>
           <div class="rows">
-            <div class="pair"><span class="lbl">指定</span><span class="val">100.00%</span></div>
-            <div class="pair"><span class="lbl">非指定</span><span class="val">100.00%</span></div>
+            <div class="pair"><span class="lbl">点客</span><span class="val">100.00%</span></div>
+            <div class="pair"><span class="lbl">散客</span><span class="val">100.00%</span></div>
           </div>
         </div>
       </div>
@@ -2657,7 +2658,7 @@
   }
   function staffPickSummaryText(sid) {
     var designated = staffRow.staffDesignated && staffRow.staffDesignated[sid] === true;
-    var guest = designated ? '指定' : '未指定';
+    var guest = designated ? '点客' : '散客';
     var role = staffRoleLabel(staffRow.staffRoles && staffRow.staffRoles[sid] ? staffRow.staffRoles[sid] : '');
     return role ? guest + '·' + role : guest;
   }
@@ -2691,9 +2692,9 @@
       var body = '';
       var jobTitle = staffJobTitleHtml(st);
       if (isEdit && edit.face === 'designate') {
-        body = '<div class="staff-card__split" role="group" aria-label="指定或未指定">' +
-          '<button type="button" class="staff-card__split-btn staff-card__split-btn--des" data-staff-opt-designate="1" data-cart-id="' + staffRow.id + '" data-staff-id="' + st.id + '">指定</button>' +
-          '<button type="button" class="staff-card__split-btn staff-card__split-btn--guest" data-staff-opt-designate="0" data-cart-id="' + staffRow.id + '" data-staff-id="' + st.id + '">未指定</button>' +
+        body = '<div class="staff-card__split" role="group" aria-label="点客或散客">' +
+          '<button type="button" class="staff-card__split-btn staff-card__split-btn--des" data-staff-opt-designate="1" data-cart-id="' + staffRow.id + '" data-staff-id="' + st.id + '">点客</button>' +
+          '<button type="button" class="staff-card__split-btn staff-card__split-btn--guest" data-staff-opt-designate="0" data-cart-id="' + staffRow.id + '" data-staff-id="' + st.id + '">散客</button>' +
           '</div>';
       } else if (isEdit && edit.face === 'role') {
         var roleBtns = STAFF_ROLE_PICK_ORDER.map(function(rid) {
@@ -3125,7 +3126,7 @@
         '<span class="role">' + escapeHtml(primaryRole || '大工') + '</span>' +
         '<span class="nm">' + escapeHtml(primaryName) + '</span>' +
         '<button type="button" class="unset' + (designated ? ' on' : '') + '" onclick="event.stopPropagation();toggleCoDesignated(' + i + ')">' +
-          '<span class="dot"></span>' + (designated ? '指定' : '未指定') +
+          '<span class="dot"></span>' + (designated ? '点客' : '散客') +
         '</button></div>';
       // 员工内嵌面板
       var staffEmbed = '';
@@ -3404,7 +3405,7 @@
       '<span class="role">' + escapeHtml(primaryRole || '大工') + '</span>' +
       '<span class="nm">' + escapeHtml(primaryName) + '</span>' +
       '<button type="button" class="unset' + (designated ? ' on' : '') + '" onclick="event.stopPropagation();toggleQcoDesignated()">' +
-        '<span class="dot"></span>' + (designated ? '指定' : '未指定') +
+        '<span class="dot"></span>' + (designated ? '点客' : '散客') +
       '</button></div>';
     var staffEmbed = '';
     if (it._staffOpen) {
