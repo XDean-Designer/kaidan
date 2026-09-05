@@ -186,13 +186,15 @@
   .guest-card .avatars-default img {
     border-radius:0; overflow:visible;
   }
-  /* 默认态：单头像；性别态：双头像 */
+  /* 默认态：单头像；性别态：仅显示所选性别的一个头像 */
   .guest-card[data-g="default"] .avatars-gender { display:none; }
   .guest-card:not([data-g="default"]) .avatars-default { display:none; }
-  .guest-card[data-g="default"] .nm { left:70px; }
-  /* 性别头像：选中彩色，未选中黑白 */
-  .guest-card[data-g="male"] .avatars-gender img:nth-child(2) { filter:grayscale(1); opacity:.55; }
-  .guest-card[data-g="female"] .avatars-gender img:nth-child(1) { filter:grayscale(1); opacity:.55; }
+  .guest-card[data-g="default"] .nm,
+  .guest-card[data-g="male"] .nm,
+  .guest-card[data-g="female"] .nm { left:70px; }
+  /* 性别态只显示被选头像 */
+  .guest-card[data-g="male"] .avatars-gender img:nth-child(2) { display:none; }
+  .guest-card[data-g="female"] .avatars-gender img:nth-child(1) { display:none; }
   .guest-card .nm {
     position:absolute; left:108px; top:36px;
     font-family:'Noto Sans SC'; font-weight:500; font-size:16px;
@@ -1320,8 +1322,8 @@
           <img src="assets/avatar_default.svg" alt="散客" onclick="go('s4')">
         </div>
         <div class="avatars avatars-gender">
-          <img src="assets/avatar_male2.png" onclick="toggleGuestGender('male')">
-          <img src="assets/avatar_card_female.png" onclick="toggleGuestGender('female')">
+          <img src="assets/avatar_male2.png" onclick="go('s4')">
+          <img src="assets/avatar_card_female.png" onclick="go('s4')">
         </div>
         <div class="nm" onclick="go('s4')" style="cursor:pointer;">散客</div>
         <button class="btn" onclick="go('s4')">选择顾客</button>
@@ -1449,8 +1451,8 @@
           <img src="assets/avatar_default.svg" alt="散客" onclick="go('s4')">
         </div>
         <div class="avatars avatars-gender">
-          <img src="assets/avatar_male2.png" onclick="toggleGuestGender('male')">
-          <img src="assets/avatar_card_female.png" onclick="toggleGuestGender('female')">
+          <img src="assets/avatar_male2.png" onclick="go('s4')">
+          <img src="assets/avatar_card_female.png" onclick="go('s4')">
         </div>
         <div class="nm" onclick="go('s4')" style="cursor:pointer;">散客</div>
         <button class="btn" onclick="go('s4')">选择顾客</button>
@@ -1556,8 +1558,8 @@
         <img src="assets/avatar_default.svg" alt="散客" onclick="go('s4')">
       </div>
       <div class="avatars avatars-gender">
-        <img src="assets/avatar_male2.png" onclick="toggleGuestGender('male')">
-        <img src="assets/avatar_card_female.png" onclick="toggleGuestGender('female')">
+        <img src="assets/avatar_male2.png" onclick="go('s4')">
+        <img src="assets/avatar_card_female.png" onclick="go('s4')">
       </div>
       <div class="nm" onclick="go('s4')" style="cursor:pointer;">散客</div>
       <button class="btn" onclick="go('s4')">选择顾客</button>
@@ -1922,8 +1924,8 @@
             <img src="assets/avatar_default.svg" alt="散客" onclick="go('s4')">
           </div>
           <div class="avatars avatars-gender">
-            <img src="assets/avatar_male2.png" onclick="toggleGuestGender('male')">
-            <img src="assets/avatar_card_female.png" onclick="toggleGuestGender('female')">
+            <img src="assets/avatar_male2.png" onclick="go('s4')">
+            <img src="assets/avatar_card_female.png" onclick="go('s4')">
           </div>
           <div class="nm" onclick="go('s4')" style="cursor:pointer;">散客</div>
           <button class="btn" onclick="go('s4')">选择顾客</button>
@@ -2012,8 +2014,8 @@
             <img src="assets/avatar_default.svg" alt="散客" onclick="go('s4')">
           </div>
           <div class="avatars avatars-gender">
-            <img src="assets/avatar_male2.png" onclick="toggleGuestGender('male')">
-            <img src="assets/avatar_card_female.png" onclick="toggleGuestGender('female')">
+            <img src="assets/avatar_male2.png" onclick="go('s4')">
+            <img src="assets/avatar_card_female.png" onclick="go('s4')">
           </div>
           <div class="nm" onclick="go('s4')" style="cursor:pointer;">散客</div>
           <button class="btn" onclick="go('s4')">选择顾客</button>
@@ -2464,10 +2466,9 @@
     if (g === 'female') return '女散客';
     return '散客';
   }
-  // 点击散客卡头像切换性别：仅切展示与性别记录，不影响顾客身份
-  // （散客卡仅在散客身份下显示，会员身份时不可见，不会触发）
-  function toggleGuestGender(g) {
-    setGuestGender(g);
+  // 点击散客卡头像：进入选择顾客（性别切换仅通过 s4）
+  function toggleGuestGender() {
+    go('s4');
   }
   function pickGuest(g) {
     setGuestGender(g);
