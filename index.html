@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -182,9 +182,17 @@
   }
   .guest-card .avatars img { width:38px; height:38px; border-radius:50%; display:block; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .guest-card .avatars img:active { transform:scale(.92); }
+  /* 默认 SVG 头像：自带圆形，禁止二次圆角裁切以免深色底出现毛边 */
+  .guest-card .avatars-default img {
+    border-radius:0; overflow:visible;
+  }
+  /* 默认态：单头像；性别态：双头像 */
+  .guest-card[data-g="default"] .avatars-gender { display:none; }
+  .guest-card:not([data-g="default"]) .avatars-default { display:none; }
+  .guest-card[data-g="default"] .nm { left:70px; }
   /* 性别头像：选中彩色，未选中黑白 */
-  .guest-card[data-g="male"] .avatars img:nth-child(2) { filter:grayscale(1); opacity:.55; }
-  .guest-card[data-g="female"] .avatars img:nth-child(1) { filter:grayscale(1); opacity:.55; }
+  .guest-card[data-g="male"] .avatars-gender img:nth-child(2) { filter:grayscale(1); opacity:.55; }
+  .guest-card[data-g="female"] .avatars-gender img:nth-child(1) { filter:grayscale(1); opacity:.55; }
   .guest-card .nm {
     position:absolute; left:108px; top:36px;
     font-family:'Noto Sans SC'; font-weight:500; font-size:16px;
@@ -234,16 +242,8 @@
   }
   .search .go-btn { position:absolute; left:318px; top:11px; font-size:14px; color:#929292; border:none; background:none; cursor:pointer; padding:0; }
 
-  /* ===== 快速消费行 ===== */
-  .quick-row {
-    position:absolute; left:16px; width:358px; height:42px;
-    background:#f7f7f7; border-radius:21px; z-index:15;
-    display:flex; align-items:center; border:none; cursor:pointer;
-  }
-  .quick-row img.ic { position:absolute; left:12px; top:13px; width:16px; height:16px; }
-  .quick-row .label { position:absolute; left:34px; top:11px; font-size:14px; font-weight:600; color:#1a1a1a; white-space:nowrap; }
-  .quick-row .arrow { position:absolute; right:11px; top:13px; width:16px; height:16px; display:flex; align-items:center; justify-content:center; }
-  .quick-row .arrow img { width:16px; height:16px; display:block; }
+  /* ===== 快捷开单行（已移除入口，样式保留备用） ===== */
+  .quick-row { display:none; }
 
   /* ===== 左侧分类栏 ===== */
   .side-nav { position:absolute; left:0; width:74px; z-index:14; }
@@ -264,7 +264,7 @@
   .cat-title[data-cat="prod"] { left:86px; }
   .proj-card[data-cat="prod"] { left:86px; width:288px; }
   /* 产品 tab 侧边栏 */
-  .side-nav[data-cat="prod"] { top:223px; }
+  .side-nav[data-cat="prod"] { }
   .proj-card { position:absolute; left:86px; width:288px; z-index:14; }
   .proj-card .thumb { position:absolute; left:0; top:0; width:89px; height:89px; border-radius:6px; overflow:hidden; }
   .proj-card .thumb img { width:89px; height:89px; object-fit:cover; display:block; }
@@ -322,17 +322,25 @@
     background:#fff2f2; color:#f32f41; font-size:16px; font-weight:500;
     border:none; border-radius:8px; cursor:pointer; z-index:1;
   }
+  .btn-guadan.is-disabled {
+    background:#f2f2f2; color:#b2b2b2; cursor:pointer;
+  }
   .btn-next {
     position:absolute; left:284px; top:10px; width:96px; height:42px;
     background:#f32f41; color:#fff; font-size:16px; font-weight:500;
     border:none; border-radius:8px; cursor:pointer; z-index:1;
   }
+  .btn-next.is-quick {
+    background:#ff8956; display:flex; align-items:center; justify-content:center; gap:2px;
+    padding:0 6px; box-sizing:border-box;
+  }
+  .btn-next.is-quick img { width:18px; height:18px; flex:none; }
+  .btn-next.is-quick .txt { font-size:16px; font-weight:500; color:#fff; white-space:nowrap; }
   .bottom-bar .amount {
-    position:absolute; left:70px; top:18px; color:#1a1a1a;
-    display:flex; align-items:baseline; gap:4px;
+    position:absolute; left:62px; top:0; bottom:0; color:#1a1a1a;
+    display:flex; align-items:center; gap:0;
     pointer-events:none;
   }
-  .bottom-bar .amount .lbl { font-size:12px; font-weight:500; color:#1a1a1a; line-height:1.2; white-space:nowrap; }
   .bottom-bar .amount .val-row { color:#f32f41; display:flex; align-items:baseline; gap:0; line-height:1.2; }
   .bottom-bar .amount .sym { font-size:14px; font-weight:500; }
   .bottom-bar .amount .val { font-size:20px; font-weight:500; font-family:var(--font-data); }
@@ -567,7 +575,7 @@
   #s5 .page { transition: padding-top .18s ease; }
   #s5.m-exp .member-card { height:200px; }
 
-  /* ===== 结算页 s6 / 快速消费结算 s7 ===== */
+  /* ===== 结算页 s6 / 快捷开单结算 s7 ===== */
   #s6 .scroll, #s7 .scroll { top:97px; bottom:72px; }
   #s6 .page, #s7 .page { position:relative; }
   #s6 .co-card, #s7 .co-card {
@@ -577,18 +585,36 @@
   #s6 .co-manual, #s7 .co-manual {
     position:absolute; left:0; top:119px; width:390px; height:56px;
     background:#fff; display:flex; align-items:center; padding:0 16px; z-index:15;
+    cursor:pointer; border-bottom:0.5px solid #e8e8e8; box-sizing:border-box;
   }
   #s6 .co-manual .lbl, #s7 .co-manual .lbl { font-size:15px; color:#1a1a1a; white-space:nowrap; }
+  #s6 .co-manual .spacer, #s7 .co-manual .spacer { flex:1; min-width:12px; }
+  #s6 .co-manual.is-editing .spacer, #s7 .co-manual.is-editing .spacer,
+  #s6 .co-manual.has-value .spacer, #s7 .co-manual.has-value .spacer { display:none; }
+  #s6 .co-manual .hint, #s7 .co-manual .hint {
+    font-size:15px; color:#929292; white-space:nowrap; flex:none;
+  }
+  #s6 .co-manual .hint.is-hidden, #s7 .co-manual .hint.is-hidden { display:none; }
   #s6 .co-manual input, #s7 .co-manual input {
     flex:1; margin-left:16px; border:none; outline:none;
     font-size:15px; color:#333; background:transparent; text-align:right;
+    display:none; min-width:0;
+  }
+  #s6 .co-manual.is-editing input, #s7 .co-manual.is-editing input { display:block; }
+  #s6 .co-manual.is-editing .hint, #s7 .co-manual.is-editing .hint { display:none; }
+  #s6 .co-manual.has-value .hint, #s7 .co-manual.has-value .hint { display:none; }
+  #s6 .co-manual.has-value:not(.is-editing) input, #s7 .co-manual.has-value:not(.is-editing) input {
+    display:block; pointer-events:none;
   }
   #s6 .co-manual input::placeholder, #s7 .co-manual input::placeholder { color:#929292; }
   #s6 .co-manual .arrow, #s7 .co-manual .arrow {
-    width:16px; height:16px; margin-left:4px; flex:none;
+    width:16px; height:16px; margin-left:8px; flex:none;
     display:flex; align-items:center; justify-content:center; color:#c7c7cc;
   }
   #s6 .co-manual .arrow svg, #s7 .co-manual .arrow svg { width:14px; height:14px; }
+  #s6 .co-bar .btn-g.is-disabled, #s7 .co-bar .btn-g.is-disabled {
+    background:#f2f2f2; color:#b2b2b2;
+  }
   #s6 .co-items, #s7 .co-items { position:absolute; left:0; top:184px; width:390px; }
   #s6 .co-item, #s7 .co-item {
     background:#fff; margin-bottom:9px;
@@ -912,7 +938,7 @@
   .benefit-sheet .benefit-item.disabled { cursor:not-allowed; opacity:0.4; }
   .benefit-sheet .benefit-item.disabled .type { color:#929292; border-color:#d8d8d8; }
 
-  /* ===== 快速消费/去收款页 顶部卡片按身份切换 ===== */
+  /* ===== 快捷开单/去收款页 顶部卡片按身份切换 ===== */
   .screen .gcard, .screen .mcard { position:absolute; left:12px; top:107px; z-index:20; }
   #s6 .gcard, #s6 .mcard, #s7 .gcard, #s7 .mcard { top:10px; }
   .screen.cust-guest .gcard { display:block; }
@@ -991,7 +1017,7 @@
   .staff-embed .detail-item__staff-block { margin:0; }
   .staff-embed .staff-grid { padding-top:0; }
 
-  /* 快速消费 员工内嵌面板 */
+  /* 快捷开单 员工内嵌面板 */
   .quick-staff-panel {
     position:absolute; left:16px; width:358px; z-index:26;
     background:#FAFAFA; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,.14);
@@ -1241,11 +1267,11 @@
     <div class="g-t">页面链路</div>
     <button class="nav-item" data-target="s1" onclick="go('s1')"><span class="idx">1</span>散客开单</button>
     <div class="nav-arrow">↓</div>
-    <button class="nav-item" data-target="s2" onclick="go('s2')"><span class="idx">2</span>快速消费</button>
+    <button class="nav-item" data-target="s2" onclick="go('s2')"><span class="idx">2</span>快捷开单</button>
     <div class="nav-arrow">↓</div>
-    <button class="nav-item" data-target="s3" onclick="go('s3')"><span class="idx">3</span>快速消费去收款</button>
+    <button class="nav-item" data-target="s3" onclick="go('s3')"><span class="idx">3</span>快捷开单去收款</button>
     <div class="nav-arrow">↓</div>
-    <button class="nav-item" data-target="s7" onclick="goQuickCheckout(true)"><span class="idx">7</span>快速消费结算</button>
+    <button class="nav-item" data-target="s7" onclick="goQuickCheckout(true)"><span class="idx">7</span>快捷开单结算</button>
     <div class="nav-arrow">↓</div>
     <button class="nav-item" data-target="s4" onclick="go('s4')"><span class="idx">4</span>选择顾客</button>
     <div class="nav-arrow">↓</div>
@@ -1289,29 +1315,27 @@
 
     <div class="scroll">
       <div class="page" style="height:887px;">
-      <div class="guest-card" data-g="male">
-        <div class="avatars">
+      <div class="guest-card" data-g="default">
+        <div class="avatars avatars-default">
+          <img src="assets/avatar_default.svg" alt="散客" onclick="go('s4')">
+        </div>
+        <div class="avatars avatars-gender">
           <img src="assets/avatar_male2.png" onclick="toggleGuestGender('male')">
           <img src="assets/avatar_card_female.png" onclick="toggleGuestGender('female')">
         </div>
-        <div class="nm" onclick="go('s4')" style="cursor:pointer;">男散客</div>
+        <div class="nm" onclick="go('s4')" style="cursor:pointer;">散客</div>
         <button class="btn" onclick="go('s4')">选择顾客</button>
       </div>
 
       <div class="panel" style="top:118px; height:843px;"></div>
 
-      <div class="tab" style="top:184px;">
+      <div class="tab" style="top:130px;">
         <div class="item proj on" onclick="switchTab(this)">项目</div>
         <div class="item prod" onclick="switchTab(this)">产品</div>
         <div class="ind"></div>
       </div>
-      <button class="quick-row" style="top:130px;" onclick="setCust('guest'); go('s2')">
-        <img class="ic" src="assets/ic_lightning.svg">
-        <span class="label">快速消费</span>
-        <span class="arrow"><img src="assets/ic_arrow_down.svg"></span>
-      </button>
 
-      <div class="side-nav" style="top:223px;" data-cat="proj">
+      <div class="side-nav" style="top:169px;" data-cat="proj">
         <div class="it on tl" data-group="洗吹">洗吹<span class="num" style="display:none"></span></div>
         <div class="it" data-group="洗剪吹">洗剪吹<span class="num" style="display:none"></span></div>
         <div class="it tr" data-group="剪发">剪发<span class="num" style="display:none"></span></div>
@@ -1323,68 +1347,68 @@
         <div class="it" data-group="其他">其他<span class="num" style="display:none"></span></div>
       </div>
 
-      <div class="cat-title" style="top:223px;" data-cat="proj">洗吹</div>
-      <div class="proj-card" style="top:263px;" data-cat="proj" data-group="洗吹">
+      <div class="cat-title" style="top:169px;" data-cat="proj">洗吹</div>
+      <div class="proj-card" style="top:209px;" data-cat="proj" data-group="洗吹">
         <div class="thumb"><img src="assets/thumb_1.png"></div>
         <div class="nm" style="top:3px;">高级设计师洗吹+造型</div>
         <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">58</span><span class="dec">.9</span></div>
         <button class="add" style="left:268px; top:72px;" onclick="addCart(this)"><img src="assets/ic_add_cart.svg"></button>
       </div>
 
-      <div class="cat-title" style="top:376px;" data-cat="proj">洗剪吹</div>
-      <div class="proj-card" style="top:416px;" data-cat="proj" data-group="洗剪吹">
+      <div class="cat-title" style="top:322px;" data-cat="proj">洗剪吹</div>
+      <div class="proj-card" style="top:362px;" data-cat="proj" data-group="洗剪吹">
         <div class="thumb"><img src="assets/thumb_2.png"></div>
         <div class="nm" style="top:0; width:191px; line-height:22px;">资深设计师|精剪+洗吹造型(不满意免单）</div>
         <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">98</span></div>
         <button class="add" style="left:268px; top:72px;" onclick="addCart(this)"><img src="assets/ic_add_cart.svg"></button>
       </div>
 
-      <div class="proj-card" style="top:529px;" data-cat="proj" data-group="洗剪吹">
+      <div class="proj-card" style="top:475px;" data-cat="proj" data-group="洗剪吹">
         <div class="thumb"><img src="assets/thumb_3.png"></div>
         <div class="nm" style="top:2px;">首席设计师洗剪吹一口价</div>
         <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">138</span></div>
         <button class="add" style="left:268px; top:72px;" onclick="addCart(this)"><img src="assets/ic_add_cart.svg"></button>
       </div>
 
-      <div class="proj-card" style="top:642px;" data-cat="proj" data-group="洗剪吹">
+      <div class="proj-card" style="top:588px;" data-cat="proj" data-group="洗剪吹">
         <div class="thumb"><img src="assets/thumb_4.png"></div>
         <div class="nm" style="top:2px;">资深设计师 | 人气洗剪造型</div>
         <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">216.</span><span class="dec">09</span></div>
         <button class="add" style="left:268px; top:72px;" onclick="addCart(this)"><img src="assets/ic_add_cart.svg"></button>
       </div>
 
-      <div class="cat-title lg" style="top:753px;" data-cat="proj">剪发</div>
+      <div class="cat-title lg" style="top:699px;" data-cat="proj">剪发</div>
 
       <!-- 产品 tab -->
-      <div class="side-nav" style="top:223px;" data-cat="prod" hidden>
+      <div class="side-nav" style="top:169px;" data-cat="prod" hidden>
         <div class="it on tl" data-group="洗护">洗护<span class="num" style="display:none"></span></div>
         <div class="it" data-group="染烫">染烫<span class="num" style="display:none"></span></div>
         <div class="it tr" data-group="其他">其他<span class="num" style="display:none"></span></div>
       </div>
-      <div class="cat-title" style="top:223px;" data-cat="prod" hidden>洗护</div>
-      <div class="proj-card" style="top:263px;" data-cat="prod" data-group="洗护" hidden>
+      <div class="cat-title" style="top:169px;" data-cat="prod" hidden>洗护</div>
+      <div class="proj-card" style="top:209px;" data-cat="prod" data-group="洗护" hidden>
         <div class="thumb"><img src="assets/thumb_1b.png"></div>
         <div class="nm" style="top:3px;">卡诗黑钻钥源洗发水</div>
         <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">268</span></div>
         <button class="add" style="left:268px; top:72px;" onclick="addCart(this)"><img src="assets/ic_add_cart.svg"></button>
       </div>
 
-      <div class="cat-title" style="top:376px;" data-cat="prod" hidden>染烫</div>
-      <div class="proj-card" style="top:416px;" data-cat="prod" data-group="染烫" hidden>
+      <div class="cat-title" style="top:322px;" data-cat="prod" hidden>染烫</div>
+      <div class="proj-card" style="top:362px;" data-cat="prod" data-group="染烫" hidden>
         <div class="thumb"><img src="assets/thumb_2b.png"></div>
         <div class="nm" style="top:3px;">欧莱雅臻萃染发膏</div>
         <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">198</span></div>
         <button class="add" style="left:268px; top:72px;" onclick="addCart(this)"><img src="assets/ic_add_cart.svg"></button>
       </div>
 
-      <div class="proj-card" style="top:529px;" data-cat="prod" data-group="洗护" hidden>
+      <div class="proj-card" style="top:475px;" data-cat="prod" data-group="洗护" hidden>
         <div class="thumb"><img src="assets/thumb_3b.png"></div>
         <div class="nm" style="top:3px;">资生堂fino发膜</div>
         <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">158</span></div>
         <button class="add" style="left:268px; top:72px;" onclick="addCart(this)"><img src="assets/ic_add_cart.svg"></button>
       </div>
 
-      <div class="proj-card" style="top:642px;" data-cat="prod" data-group="洗护" hidden>
+      <div class="proj-card" style="top:588px;" data-cat="prod" data-group="洗护" hidden>
         <div class="thumb"><img src="assets/thumb_4b.png"></div>
         <div class="nm" style="top:3px;">施华蔻羊绒脂护发素</div>
         <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">88</span></div>
@@ -1396,15 +1420,15 @@
     <div class="bottom-bar">
       <button type="button" class="cart-hot" onclick="openCartSheet()" aria-label="已选商品">
         <span class="btn-add"><img src="assets/ic_add_round.svg" alt=""><span class="cart-badge" data-cart-badge>0</span></span>
-        <span class="amount"><span class="lbl">应付</span><span class="val-row"><span class="sym">¥</span><span class="val" id="s1amount">0.00</span></span></span>
+        <span class="amount"><span class="val-row"><span class="sym">¥</span><span class="val" id="s1amount">0.00</span></span></span>
       </button>
-      <button class="btn-guadan" onclick="toast('已挂单')">挂单</button>
-      <button class="btn-next" onclick="nextStep('s1')">下一步</button>
+      <button class="btn-guadan is-disabled" data-guadan="s1" onclick="tryHangOrder('s1')">挂单</button>
+      <button class="btn-next is-quick" data-next="s1" onclick="onPrimaryAction('s1')"><img src="assets/ic_lightning_quick.svg" alt=""><span class="txt">快捷开单</span></button>
     </div>
   </div>
 
-  <!-- ============ 页面2 快速消费 ============ -->
-    <div class="screen" id="s2" data-name="快速消费">
+  <!-- ============ 页面2 快捷开单 ============ -->
+    <div class="screen" id="s2" data-name="快捷开单">
       <div class="status-bar">
         <div class="time">9:41</div>
         <div class="icons">
@@ -1420,12 +1444,15 @@
         <div class="ic-right"><img src="assets/ic_nav_right.svg"></div>
       </div>
 
-      <div class="guest-card gcard" data-g="male">
-        <div class="avatars">
+      <div class="guest-card gcard" data-g="default">
+        <div class="avatars avatars-default">
+          <img src="assets/avatar_default.svg" alt="散客" onclick="go('s4')">
+        </div>
+        <div class="avatars avatars-gender">
           <img src="assets/avatar_male2.png" onclick="toggleGuestGender('male')">
           <img src="assets/avatar_card_female.png" onclick="toggleGuestGender('female')">
         </div>
-        <div class="nm" onclick="go('s4')" style="cursor:pointer;">男散客</div>
+        <div class="nm" onclick="go('s4')" style="cursor:pointer;">散客</div>
         <button class="btn" onclick="go('s4')">选择顾客</button>
       </div>
       <div class="member-card mcard">
@@ -1507,8 +1534,8 @@
     </div>
   </div>
 
-  <!-- ============ 页面3 快速消费去收款 ============ -->
-  <div class="screen" id="s3" data-name="快速消费去收款">
+  <!-- ============ 页面3 快捷开单去收款 ============ -->
+  <div class="screen" id="s3" data-name="快捷开单去收款">
     <div class="status-bar">
       <div class="time">9:41</div>
       <div class="icons">
@@ -1524,12 +1551,15 @@
       <div class="ic-right"><img src="assets/ic_nav_right.svg"></div>
     </div>
 
-    <div class="guest-card gcard" data-g="male">
-      <div class="avatars">
+    <div class="guest-card gcard" data-g="default">
+      <div class="avatars avatars-default">
+        <img src="assets/avatar_default.svg" alt="散客" onclick="go('s4')">
+      </div>
+      <div class="avatars avatars-gender">
         <img src="assets/avatar_male2.png" onclick="toggleGuestGender('male')">
         <img src="assets/avatar_card_female.png" onclick="toggleGuestGender('female')">
       </div>
-      <div class="nm" onclick="go('s4')" style="cursor:pointer;">男散客</div>
+      <div class="nm" onclick="go('s4')" style="cursor:pointer;">散客</div>
       <button class="btn" onclick="go('s4')">选择顾客</button>
     </div>
     <div class="member-card mcard">
@@ -1770,19 +1800,13 @@
 
       <div class="panel" style="top:calc(215px - var(--mfold, 0px)); height:843px;"></div>
 
-      <div class="tab" style="top:calc(281px - var(--mfold, 0px));">
+      <div class="tab" style="top:calc(227px - var(--mfold, 0px));">
         <div class="item proj on" onclick="switchTab(this)">项目</div>
         <div class="item prod" onclick="switchTab(this)">产品</div>
         <div class="ind"></div>
       </div>
 
-      <button class="quick-row" style="top:calc(227px - var(--mfold, 0px));" onclick="setCust('member'); go('s2')">
-        <img class="ic" src="assets/ic_lightning.svg">
-        <span class="label">快速消费</span>
-        <span class="arrow"><img src="assets/ic_arrow_down.svg"></span>
-      </button>
-
-      <div class="side-nav" style="top:calc(320px - var(--mfold, 0px));" data-cat="proj">
+      <div class="side-nav" style="top:calc(266px - var(--mfold, 0px));" data-cat="proj">
         <div class="it on tl" data-group="洗吹">洗吹<span class="num" style="display:none"></span></div>
         <div class="it" data-group="洗剪吹">洗剪吹<span class="num" style="display:none"></span></div>
         <div class="it tr" data-group="剪发">剪发<span class="num" style="display:none"></span></div>
@@ -1794,68 +1818,68 @@
         <div class="it" data-group="其他">其他<span class="num" style="display:none"></span></div>
       </div>
 
-      <div class="cat-title" style="top:calc(320px - var(--mfold, 0px));" data-cat="proj">洗吹</div>
-      <div class="proj-card" style="top:calc(360px - var(--mfold, 0px));" data-cat="proj" data-group="洗吹">
+      <div class="cat-title" style="top:calc(266px - var(--mfold, 0px));" data-cat="proj">洗吹</div>
+      <div class="proj-card" style="top:calc(306px - var(--mfold, 0px));" data-cat="proj" data-group="洗吹">
         <div class="thumb"><img src="assets/thumb_1b.png"></div>
         <div class="nm" style="top:3px;">高级设计师洗吹+造型</div>
         <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">58</span><span class="dec">.9</span></div>
         <button class="add" style="left:268px; top:72px;" onclick="addCartM(this)"><img src="assets/ic_add_cart.svg"></button>
       </div>
 
-      <div class="cat-title" style="top:calc(473px - var(--mfold, 0px));" data-cat="proj">洗剪吹</div>
-      <div class="proj-card" style="top:calc(513px - var(--mfold, 0px));" data-cat="proj" data-group="洗剪吹">
+      <div class="cat-title" style="top:calc(419px - var(--mfold, 0px));" data-cat="proj">洗剪吹</div>
+      <div class="proj-card" style="top:calc(459px - var(--mfold, 0px));" data-cat="proj" data-group="洗剪吹">
         <div class="thumb"><img src="assets/thumb_2b.png"></div>
         <div class="nm" style="top:0; width:191px; line-height:22px;">资深设计师|精剪+洗吹造型(不满意免单）</div>
         <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">98</span></div>
         <button class="add" style="left:268px; top:72px;" onclick="addCartM(this)"><img src="assets/ic_add_cart.svg"></button>
       </div>
 
-      <div class="proj-card" style="top:calc(626px - var(--mfold, 0px));" data-cat="proj" data-group="洗剪吹">
+      <div class="proj-card" style="top:calc(572px - var(--mfold, 0px));" data-cat="proj" data-group="洗剪吹">
         <div class="thumb"><img src="assets/thumb_3b.png"></div>
         <div class="nm" style="top:2px;">首席设计师洗剪吹一口价</div>
         <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">138</span></div>
         <button class="add" style="left:268px; top:72px;" onclick="addCartM(this)"><img src="assets/ic_add_cart.svg"></button>
       </div>
 
-      <div class="proj-card" style="top:calc(739px - var(--mfold, 0px));" data-cat="proj" data-group="洗剪吹">
+      <div class="proj-card" style="top:calc(685px - var(--mfold, 0px));" data-cat="proj" data-group="洗剪吹">
         <div class="thumb"><img src="assets/thumb_4b.png"></div>
         <div class="nm" style="top:2px;">资深设计师 | 人气洗剪造型</div>
         <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">216.</span><span class="dec">09</span></div>
         <button class="add" style="left:268px; top:72px;" onclick="addCartM(this)"><img src="assets/ic_add_cart.svg"></button>
       </div>
 
-      <div class="cat-title lg" style="top:calc(850px - var(--mfold, 0px));" data-cat="proj">剪发</div>
+      <div class="cat-title lg" style="top:calc(796px - var(--mfold, 0px));" data-cat="proj">剪发</div>
 
       <!-- 产品 tab -->
-      <div class="side-nav" style="top:calc(320px - var(--mfold, 0px));" data-cat="prod" hidden>
+      <div class="side-nav" style="top:calc(266px - var(--mfold, 0px));" data-cat="prod" hidden>
         <div class="it on tl" data-group="洗护">洗护<span class="num" style="display:none"></span></div>
         <div class="it" data-group="染烫">染烫<span class="num" style="display:none"></span></div>
         <div class="it tr" data-group="其他">其他<span class="num" style="display:none"></span></div>
       </div>
-      <div class="cat-title" style="top:calc(320px - var(--mfold, 0px));" data-cat="prod" hidden>洗护</div>
-      <div class="proj-card" style="top:calc(360px - var(--mfold, 0px));" data-cat="prod" data-group="洗护" hidden>
+      <div class="cat-title" style="top:calc(266px - var(--mfold, 0px));" data-cat="prod" hidden>洗护</div>
+      <div class="proj-card" style="top:calc(306px - var(--mfold, 0px));" data-cat="prod" data-group="洗护" hidden>
         <div class="thumb"><img src="assets/thumb_1.png"></div>
         <div class="nm" style="top:3px;">卡诗黑钻钥源洗发水</div>
         <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">268</span></div>
         <button class="add" style="left:268px; top:72px;" onclick="addCartM(this)"><img src="assets/ic_add_cart.svg"></button>
       </div>
 
-      <div class="cat-title" style="top:calc(473px - var(--mfold, 0px));" data-cat="prod" hidden>染烫</div>
-      <div class="proj-card" style="top:calc(513px - var(--mfold, 0px));" data-cat="prod" data-group="染烫" hidden>
+      <div class="cat-title" style="top:calc(419px - var(--mfold, 0px));" data-cat="prod" hidden>染烫</div>
+      <div class="proj-card" style="top:calc(459px - var(--mfold, 0px));" data-cat="prod" data-group="染烫" hidden>
         <div class="thumb"><img src="assets/thumb_2.png"></div>
         <div class="nm" style="top:3px;">欧莱雅臻萃染发膏</div>
         <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">198</span></div>
         <button class="add" style="left:268px; top:72px;" onclick="addCartM(this)"><img src="assets/ic_add_cart.svg"></button>
       </div>
 
-      <div class="proj-card" style="top:calc(626px - var(--mfold, 0px));" data-cat="prod" data-group="洗护" hidden>
+      <div class="proj-card" style="top:calc(572px - var(--mfold, 0px));" data-cat="prod" data-group="洗护" hidden>
         <div class="thumb"><img src="assets/thumb_3.png"></div>
         <div class="nm" style="top:3px;">资生堂fino发膜</div>
         <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">158</span></div>
         <button class="add" style="left:268px; top:72px;" onclick="addCartM(this)"><img src="assets/ic_add_cart.svg"></button>
       </div>
 
-      <div class="proj-card" style="top:calc(739px - var(--mfold, 0px));" data-cat="prod" data-group="洗护" hidden>
+      <div class="proj-card" style="top:calc(685px - var(--mfold, 0px));" data-cat="prod" data-group="洗护" hidden>
         <div class="thumb"><img src="assets/thumb_4.png"></div>
         <div class="nm" style="top:3px;">施华蔻羊绒脂护发素</div>
         <div class="pr" style="top:73px;"><span class="sym">¥</span><span class="int">88</span></div>
@@ -1867,10 +1891,10 @@
     <div class="bottom-bar">
       <button type="button" class="cart-hot" onclick="openCartSheet()" aria-label="已选商品">
         <span class="btn-add"><img src="assets/ic_add_round.svg" alt=""><span class="cart-badge" data-cart-badge>0</span></span>
-        <span class="amount"><span class="lbl">应付</span><span class="val-row"><span class="sym">¥</span><span class="val" id="s5amount">0.00</span></span></span>
+        <span class="amount"><span class="val-row"><span class="sym">¥</span><span class="val" id="s5amount">0.00</span></span></span>
       </button>
-      <button class="btn-guadan" onclick="toast('已挂单')">挂单</button>
-      <button class="btn-next" onclick="nextStep('s5')">下一步</button>
+      <button class="btn-guadan is-disabled" data-guadan="s5" onclick="tryHangOrder('s5')">挂单</button>
+      <button class="btn-next is-quick" data-next="s5" onclick="onPrimaryAction('s5')"><img src="assets/ic_lightning_quick.svg" alt=""><span class="txt">快捷开单</span></button>
     </div>
   </div>
 
@@ -1893,12 +1917,15 @@
 
     <div class="scroll">
       <div class="page" style="height:600px;">
-        <div class="guest-card gcard co-gcard" data-g="male">
-          <div class="avatars">
+        <div class="guest-card gcard co-gcard" data-g="default">
+          <div class="avatars avatars-default">
+            <img src="assets/avatar_default.svg" alt="散客" onclick="go('s4')">
+          </div>
+          <div class="avatars avatars-gender">
             <img src="assets/avatar_male2.png" onclick="toggleGuestGender('male')">
             <img src="assets/avatar_card_female.png" onclick="toggleGuestGender('female')">
           </div>
-          <div class="nm" onclick="go('s4')" style="cursor:pointer;">男散客</div>
+          <div class="nm" onclick="go('s4')" style="cursor:pointer;">散客</div>
           <button class="btn" onclick="go('s4')">选择顾客</button>
         </div>
         <div class="member-card mcard co-mcard">
@@ -1940,9 +1967,11 @@
           </div>
         </div>
 
-        <div class="co-manual" id="coManual">
-          <span class="lbl">手工单号</span>
-          <input id="coManualNo" type="text" value="" placeholder="请输入手工单号">
+        <div class="co-manual" id="coManual" onclick="startEditOrderNo('co')">
+          <span class="lbl">单号</span>
+          <span class="spacer"></span>
+          <span class="hint" id="coManualHint">结账后自动生成</span>
+          <input id="coManualNo" type="text" value="" placeholder="请输入单号" onclick="event.stopPropagation()" onblur="finishEditOrderNo('co')" oninput="syncOrderNoUI('co')">
           <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span>
         </div>
 
@@ -1953,14 +1982,14 @@
     <div class="co-bar">
       <div class="pay"><span class="l">应付 ¥</span><span class="v" id="coPay">0.00</span></div>
       <div class="btns">
-        <button class="btn-g" onclick="toast('已挂单')">挂单</button>
+        <button class="btn-g" data-guadan="s6" onclick="tryHangOrder('s6')">挂单</button>
         <button class="btn-c" onclick="checkoutDone()">结账</button>
       </div>
     </div>
   </div>
 
-  <!-- ============ 页面7 快速消费开单结账（第二步） ============ -->
-  <div class="screen" id="s7" data-name="快速消费结算">
+  <!-- ============ 页面7 快捷开单开单结账（第二步） ============ -->
+  <div class="screen" id="s7" data-name="快捷开单结算">
     <div class="status-bar">
       <div class="time">9:41</div>
       <div class="icons">
@@ -1978,12 +2007,15 @@
 
     <div class="scroll">
       <div class="page" style="height:600px;">
-        <div class="guest-card gcard co-gcard" data-g="male">
-          <div class="avatars">
+        <div class="guest-card gcard co-gcard" data-g="default">
+          <div class="avatars avatars-default">
+            <img src="assets/avatar_default.svg" alt="散客" onclick="go('s4')">
+          </div>
+          <div class="avatars avatars-gender">
             <img src="assets/avatar_male2.png" onclick="toggleGuestGender('male')">
             <img src="assets/avatar_card_female.png" onclick="toggleGuestGender('female')">
           </div>
-          <div class="nm" onclick="go('s4')" style="cursor:pointer;">男散客</div>
+          <div class="nm" onclick="go('s4')" style="cursor:pointer;">散客</div>
           <button class="btn" onclick="go('s4')">选择顾客</button>
         </div>
         <div class="member-card mcard co-mcard">
@@ -2025,9 +2057,11 @@
           </div>
         </div>
 
-        <div class="co-manual" id="qcoManual">
-          <span class="lbl">手工单号</span>
-          <input id="qcoManualNo" type="text" value="" placeholder="请输入手工单号">
+        <div class="co-manual" id="qcoManual" onclick="startEditOrderNo('qco')">
+          <span class="lbl">单号</span>
+          <span class="spacer"></span>
+          <span class="hint" id="qcoManualHint">结账后自动生成</span>
+          <input id="qcoManualNo" type="text" value="" placeholder="请输入单号" onclick="event.stopPropagation()" onblur="finishEditOrderNo('qco')" oninput="syncOrderNoUI('qco')">
           <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span>
         </div>
 
@@ -2038,13 +2072,13 @@
     <div class="co-bar">
       <div class="pay"><span class="l">应付 ¥</span><span class="v" id="qcoPay">0.00</span></div>
       <div class="btns">
-        <button class="btn-g" onclick="toast('已挂单')">挂单</button>
+        <button class="btn-g is-disabled" data-guadan="s7" onclick="tryHangOrder('s7')">挂单</button>
         <button class="btn-c" onclick="quickCheckoutDone()">结账</button>
       </div>
     </div>
   </div>
 
-  <!-- ============ 页面8 门店流水（快速消费展示） ============ -->
+  <!-- ============ 页面8 门店流水（快捷开单展示） ============ -->
   <div class="screen" id="s8" data-name="门店流水">
     <div class="status-bar">
       <div class="time">9:41</div>
@@ -2081,7 +2115,7 @@
           <div class="g-main">
             <div class="g-line">
               <span class="bolt"><img src="assets/ic_lightning.svg" alt=""></span>
-              <span class="name">快速消费</span>
+              <span class="name">快捷开单</span>
               <span class="amt">¥ 491.00</span>
             </div>
             <div class="svc">服务人 <span class="sep">|</span> 刘敏</div>
@@ -2098,7 +2132,7 @@
     </div>
   </div>
 
-  <!-- ============ 页面9 选择退款项目（快速消费） ============ -->
+  <!-- ============ 页面9 选择退款项目（快捷开单） ============ -->
   <div class="screen" id="s9" data-name="选择退款项目">
     <div class="status-bar">
       <div class="time">9:41</div>
@@ -2120,7 +2154,7 @@
           <div class="main">
             <div class="nm-line">
               <span class="bolt"><img src="assets/ic_lightning.svg" alt=""></span>
-              <span class="name">快速消费</span>
+              <span class="name">快捷开单</span>
             </div>
             <div class="price-line">
               <span class="o">原价:¥ 158.00</span>
@@ -2139,7 +2173,7 @@
     </div>
   </div>
 
-  <!-- ============ 页面10 业绩设置（劳动业绩-快速消费） ============ -->
+  <!-- ============ 页面10 业绩设置（劳动业绩-快捷开单） ============ -->
   <div class="screen" id="s10" data-name="业绩设置">
     <div class="status-bar">
       <div class="time">9:41</div>
@@ -2162,12 +2196,12 @@
     <div class="pset-tip"><img src="assets/ic_info_red.svg" alt=""><span>注意此处修改业绩，而不是提成！</span></div>
     <div class="pset-cols">
       <div class="pset-rail">
-        <button class="cat on" type="button"><span class="ind"></span><span class="nm">快速消费</span></button>
+        <button class="cat on" type="button"><span class="ind"></span><span class="nm">快捷开单</span></button>
         <button class="cat" type="button" onclick="toast('洗吹')"><span class="ind"></span><span class="nm">洗吹</span></button>
       </div>
       <div class="pset-panel">
         <div class="perf-card">
-          <div class="hd">快速消费</div>
+          <div class="hd">快捷开单</div>
           <div class="table">
             <div class="trow head"><span class="c0"></span><span class="cv">大工</span><span class="cv">中工</span><span class="cv">小工</span></div>
             <div class="trow"><span class="c0">点客</span><span class="cv">100.00%</span><span class="cv">100.00%</span><span class="cv">100.00%</span></div>
@@ -2178,7 +2212,7 @@
     </div>
   </div>
 
-  <!-- ============ 页面11 提成方案（劳动提成-快速消费） ============ -->
+  <!-- ============ 页面11 提成方案（劳动提成-快捷开单） ============ -->
   <div class="screen" id="s11" data-name="提成方案">
     <div class="status-bar">
       <div class="time">9:41</div>
@@ -2206,12 +2240,12 @@
     <div class="pset-div"></div>
     <div class="pset-cols">
       <div class="pset-rail">
-        <button class="cat on" type="button"><span class="ind"></span><span class="nm">快速消费</span></button>
+        <button class="cat on" type="button"><span class="ind"></span><span class="nm">快捷开单</span></button>
         <button class="cat" type="button" onclick="toast('洗吹')"><span class="ind"></span><span class="nm">洗吹</span></button>
       </div>
       <div class="pset-panel">
         <div class="perf-card">
-          <div class="hd">快速消费</div>
+          <div class="hd">快捷开单</div>
           <div class="rows">
             <div class="pair"><span class="lbl">点客</span><span class="val">100.00%</span></div>
             <div class="pair"><span class="lbl">散客</span><span class="val">100.00%</span></div>
@@ -2344,7 +2378,7 @@
     toastTimer = setTimeout(function(){ t.style.display='none'; }, 1400);
   }
 
-  // ---- 快速消费/去收款页 顾客身份切换 ----
+  // ---- 快捷开单/去收款页 顾客身份切换 ----
   var currentCust = 'guest';
   // 会员持有权益对价目的优惠（演示：陈女士持有「超值折扣卡 8.0折」为全场最优折扣）
   var MEMBER_BENEFIT_DISCOUNT = 0.8;
@@ -2415,6 +2449,21 @@
       if (nm) nm.textContent = (g === 'male' ? '男散客' : '女散客');
     });
   }
+  function resetGuestDefault() {
+    document.querySelectorAll('.guest-card').forEach(function(c){
+      c.setAttribute('data-g', 'default');
+      var nm = c.querySelector('.nm');
+      if (nm) nm.textContent = '散客';
+    });
+  }
+  function getGuestDisplayName() {
+    var c = document.querySelector('.guest-card');
+    if (!c) return '散客';
+    var g = c.getAttribute('data-g');
+    if (g === 'male') return '男散客';
+    if (g === 'female') return '女散客';
+    return '散客';
+  }
   // 点击散客卡头像切换性别：仅切展示与性别记录，不影响顾客身份
   // （散客卡仅在散客身份下显示，会员身份时不可见，不会触发）
   function toggleGuestGender(g) {
@@ -2441,7 +2490,7 @@
   }
   setCust('guest');
 
-  // ---- 快速消费 键盘输入 ----
+  // ---- 快捷开单 键盘输入 ----
   var s2val = '';
   function renderS2() {
     var ph = document.getElementById('s2moneyPh');
@@ -2510,7 +2559,7 @@
   }
   function delKey3() { s3val = s3val.slice(0,-1) || '0'; renderS3(); }
 
-  // ---- 快速消费 员工/备注（s2/s3 共享状态） ----
+  // ---- 快捷开单 员工/备注（s2/s3 共享状态） ----
   var quickStaffRow = { id: '__quick__', staffIds: [], staffRoles: {}, staffDesignated: {} };
   var quickRemark = '';
   var quickStaffOpen = '';   // 当前展开的员工面板 id（'' 表示收起）
@@ -2578,7 +2627,15 @@
   function addCartM(btn) { openAddSheet(btn, 'member'); }
   function addCart(btn) { openAddSheet(btn, 'guest'); }
 
-  // ---- 下一步：进入开单结账结算页 s6 ----
+  // ---- 下一步 / 快捷开单主按钮 ----
+  function onPrimaryAction(screenId) {
+    if (!cartItems.length) {
+      setCust(screenId === 's5' ? 'member' : 'guest');
+      go('s2');
+      return;
+    }
+    nextStep(screenId);
+  }
   function nextStep(screenId) {
     if (!cartItems.length) {
       toast('请先选择项目');
@@ -2587,6 +2644,38 @@
     setCoCust(screenId === 's5' ? 'member' : 'guest');
     closeCartSheet();
     go('s6');
+  }
+  function tryHangOrder(ctx) {
+    if (ctx === 's7') {
+      toast('快捷开单不可挂单');
+      return;
+    }
+    if (!cartItems.length) {
+      toast('请先添加项目或产品');
+      return;
+    }
+    toast('已挂单');
+  }
+  function syncHangAndNextUI() {
+    var empty = !cartItems.length;
+    ['s1', 's5'].forEach(function(id) {
+      var g = document.querySelector('[data-guadan="' + id + '"]');
+      var n = document.querySelector('[data-next="' + id + '"]');
+      if (g) g.classList.toggle('is-disabled', empty);
+      if (n) {
+        if (empty) {
+          n.classList.add('is-quick');
+          n.innerHTML = '<img src="assets/ic_lightning_quick.svg" alt=""><span class="txt">快捷开单</span>';
+        } else {
+          n.classList.remove('is-quick');
+          n.textContent = '下一步';
+        }
+      }
+    });
+    var s6g = document.querySelector('[data-guadan="s6"]');
+    if (s6g) s6g.classList.toggle('is-disabled', empty);
+    var s7g = document.querySelector('[data-guadan="s7"]');
+    if (s7g) s7g.classList.add('is-disabled');
   }
 
   // ===== 添加项目/产品 sheet 弹窗 =====
@@ -3142,6 +3231,7 @@
       el.textContent = n > 99 ? '99+' : String(n);
       el.classList.toggle('show', n > 0);
     });
+    syncHangAndNextUI();
   }
   function confirmAddSheet() {
     ensureStaffState();
@@ -3323,7 +3413,42 @@
     s6.classList.toggle('cust-guest', type !== 'member');
   }
 
-  // ---- 手工单号：日期+序号，如 20260821-001 ----
+  // ---- 单号：默认「结账后自动生成」，点击可手动输入 ----
+  function orderNoEls(kind) {
+    var prefix = kind === 'qco' ? 'qco' : 'co';
+    return {
+      row: document.getElementById(prefix === 'qco' ? 'qcoManual' : 'coManual'),
+      input: document.getElementById(prefix === 'qco' ? 'qcoManualNo' : 'coManualNo'),
+      hint: document.getElementById(prefix === 'qco' ? 'qcoManualHint' : 'coManualHint')
+    };
+  }
+  function syncOrderNoUI(kind) {
+    var els = orderNoEls(kind);
+    if (!els.row || !els.input) return;
+    var has = !!(els.input.value || '').trim();
+    els.row.classList.toggle('has-value', has);
+  }
+  function startEditOrderNo(kind) {
+    var els = orderNoEls(kind);
+    if (!els.row || !els.input) return;
+    els.row.classList.add('is-editing');
+    setTimeout(function() { els.input.focus(); }, 0);
+  }
+  function finishEditOrderNo(kind) {
+    var els = orderNoEls(kind);
+    if (!els.row || !els.input) return;
+    els.row.classList.remove('is-editing');
+    syncOrderNoUI(kind);
+  }
+  function resetOrderNo(kind) {
+    var els = orderNoEls(kind);
+    if (!els.input) return;
+    els.input.value = '';
+    if (els.row) els.row.classList.remove('is-editing', 'has-value');
+    syncOrderNoUI(kind);
+  }
+
+  // ---- 单号生成（结账时由系统生成；原型保留工具函数） ----
   function genCoManual() {
     var d = new Date();
     var p = function(n) { return (n < 10 ? '0' : '') + n; };
@@ -3333,7 +3458,7 @@
   }
 
   // ---- 权益数据 ----
-  // 快速消费可选权益类型：会员卡储值金额 / 全场项目计次或折扣 / 全场项目或产品通用优惠券 / 满足金额门槛的代金券
+  // 快捷开单可选权益类型：会员卡储值金额 / 全场项目计次或折扣 / 全场项目或产品通用优惠券 / 满足金额门槛的代金券
   // qr 规则：discount=按比例折；minus=满 min 减 amount；none=计次核销不抵扣金额
   var BENEFITS = [
     { type: '会员卡', name: '九折储值卡', val: '余额2049.00元', qr: { kind: 'discount', rate: 0.9 } },
@@ -3342,7 +3467,7 @@
     { type: '优惠券', name: '新人8折券', val: '满58减10', qr: { kind: 'minus', min: 58, amount: 10 } },
     { type: '优惠券', name: '满200减30券', val: '满200减30', qr: { kind: 'minus', min: 200, amount: 30 } }
   ];
-  // 快速消费应用权益后的应付金额
+  // 快捷开单应用权益后的应付金额
   function qcoApplyBenefit(it) {
     var amt = it.price;
     var rule = it.benefit && it.benefit._rule;
@@ -3358,10 +3483,8 @@
 
   // ---- s6 渲染 ----
   function renderCo() {
-    var manual = document.getElementById('coManualNo');
-    if (document.getElementById('s6').classList.contains('active') && !manual.value.trim()) {
-      manual.value = genCoManual();
-    }
+    syncOrderNoUI('co');
+    syncHangAndNextUI();
 
     var box = document.getElementById('coItems');
     var pay = document.getElementById('coPay');
@@ -3536,7 +3659,7 @@
     renderBenefitList();
     openMask('benefitSheetMask');
   }
-  // 权益门槛判断：快速消费时，代金券/优惠券需金额满足门槛才可选
+  // 权益门槛判断：快捷开单时，代金券/优惠券需金额满足门槛才可选
   function benefitUsable(b, amt) {
     var rule = b.qr;
     if (!rule) return true;
@@ -3596,22 +3719,24 @@
     s5total = 0;
     updateCartBadge();
     closeCartSheet();
-    document.getElementById('coManualNo').value = '';
+    resetOrderNo('co');
+    resetGuestDefault();
     navStack = ['s1'];
     activate('s1');
+    setCust('guest');
     toast('结账成功');
   }
 
-  // ===== 快速消费结账第二步 s7 =====
-  var qcoItem = null;       // 当前快速消费明细
+  // ===== 快捷开单结账第二步 s7 =====
+  var qcoItem = null;       // 当前快捷开单明细
   var qcoCust = 'guest';    // s7 顾客身份
 
   function qcoBuildItem() {
     var amt = parseFloat(s3val) || 0;
-    var pay = amt;   // 快速消费按原价，不做身份折扣
+    var pay = amt;   // 快捷开单按原价，不做身份折扣
     if (!qcoItem) {
       qcoItem = {
-        name: '快速消费',
+        name: '快捷开单',
         price: amt,
         receivable: pay,
         actual: pay,
@@ -3650,10 +3775,8 @@
 
   function renderQco() {
     if (!qcoItem) return;
-    var manual = document.getElementById('qcoManualNo');
-    if (document.getElementById('s7').classList.contains('active') && !manual.value.trim()) {
-      manual.value = genCoManual();
-    }
+    syncOrderNoUI('qco');
+    syncHangAndNextUI();
     var box = document.getElementById('qcoItems');
     var pay = document.getElementById('qcoPay');
     var it = qcoItem;
@@ -3806,11 +3929,12 @@
   function quickCheckoutDone() {
     if (!qcoItem) { toast('暂无结算项目'); return; }
     qcoItem = null;
-    document.getElementById('qcoManualNo').value = '';
+    resetOrderNo('qco');
     s2val = ''; renderS2();
     s3val = '299'; renderS3();
     navStack = ['s1'];
     activate('s1');
+    resetGuestDefault();
     setCust('guest');
     setQcoCust('guest');
     toast('结账成功');
@@ -3852,6 +3976,10 @@
     setCoCust('guest');
     setQcoCust('guest');
     syncMemberFoldUI();
+    syncHangAndNextUI();
+    syncOrderNoUI('co');
+    syncOrderNoUI('qco');
+    resetGuestDefault();
   }
   initS6();
 
