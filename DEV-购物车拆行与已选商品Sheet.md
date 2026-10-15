@@ -2,7 +2,7 @@
 
 > **用途**：把本文完整交给 AI / 开发即可落地本次改动。  
 > **范围**：仅「添加项目/产品进购物车」的合并拆分逻辑，以及底部「已选商品」Sheet。  
-> **不要改**：快速消费流程、s6/s7 结算页业务规则（权益/改价等）、支付/挂单线上逻辑。  
+> **不要改**：快捷开单流程、s6/s7 结算页业务规则（权益/改价等）、支付/挂单线上逻辑。  
 > **设计稿**：[已选商品 Sheet · Figma](https://www.figma.com/design/kaRi8xVZGuJExsUmKkSuxb/%E5%BC%80%E5%8D%95%E7%BB%93%E8%B4%A6-ZM?node-id=388-429)  
 > **参考原型**：`开单页面/index.html`（仓库 [XDean-Designer/kaidan](https://github.com/XDean-Designer/kaidan)，commit 含本需求）  
 > **PRD**：`开单页面/PRD-开单结账.md` v1.2 §4.4 / §6.12 / 规则 16–18 / 验收 74–80
@@ -152,7 +152,7 @@ unitPayable = round2(payable / qty)
 2. **实现已选商品 Sheet**：底部 bar 左侧（购物车图标+角标+应付金额）为热区；空车 toast「请先选择项目」；有货时从 bar 后一层弹出 Sheet（bar 始终置顶）。Sheet 含标题「已选商品」、清空（二次确认）、关闭；列表行含名称、员工摘要、单件价、±数量（0 删行，上限 999）。数据与结算页购物车同源。  
 3. UI 对齐 Figma：https://www.figma.com/design/kaRi8xVZGuJExsUmKkSuxb/开单结账-ZM?node-id=388-429  
 4. 对照上文「验收清单」自测通过。  
-5. 不要改快速消费、支付、挂单主流程；不要把不同应付/员工的同项重新合并。
+5. 不要改快捷开单、支付、挂单主流程；不要把不同应付/员工的同项重新合并。
 
 ---
 
